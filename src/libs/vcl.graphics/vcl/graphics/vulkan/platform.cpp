@@ -27,29 +27,92 @@
 // C++ standard library
 #include <array>
 #include <iostream>
+#include <set>
 
 // VCL
 #include <vcl/core/contract.h>
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	Platform* Platform::_implementation = nullptr;
+	bool initializeVulkan(std::vector<VkLayerProperties>& layers, std::vector<VkExtensionProperties>& availableExtensions, std::multimap<std::string, std::string>& extensionPerLayer);
 
-	void Platform::initialise()
+	std::vector<VkLayerProperties> Platform::_availableLayers;
+	std::vector<VkExtensionProperties> Platform::_availableExtensions;
+	std::multimap<std::string, std::string> Platform::_extensionsPerLayer;
+	bool Platform::_platformInitialized = initializeVulkan(_availableLayers, _availableExtensions, _extensionsPerLayer);
+
+	bool initializeVulkan(std::vector<VkLayerProperties>& layers, std::vector<VkExtensionProperties>& availableExtensions, std::multimap<std::string, std::string>& extensionsPerLayer)
 	{
-		if (_implementation == nullptr)
-			_implementation = new Platform();
+		VkResult res;
+
+		// Enumerate the layers
+		uint32_t nr_layers = 0;
+		res = vkEnumerateInstanceLayerProperties(&nr_layers, nullptr);
+		if (res != VkResult::VK_SUCCESS)
+			throw "";
+
+		layers.resize(nr_layers);
+		res = vkEnumerateInstanceLayerProperties(&nr_layers, layers.data());
+		if (res != VkResult::VK_SUCCESS)
+			throw "";
+
+		// Enumerate the extensions
+		{
+			uint32_t nr_extensions = 0;
+			res = vkEnumerateInstanceExtensionProperties("", &nr_extensions, nullptr);
+			if (res != VkResult::VK_SUCCESS)
+				throw "";
+
+			availableExtensions.clear();
+			availableExtensions.resize(nr_extensions);
+			res = vkEnumerateInstanceExtensionProperties("", &nr_extensions, availableExtensions.data());
+			if (res != VkResult::VK_SUCCESS)
+				throw "";
+		}
+
+		std::vector<VkExtensionProperties> extensions;
+		for (uint32_t l = 0; l < nr_layers; l++)
+		{
+			uint32_t nr_extensions = 0;
+			res = vkEnumerateInstanceExtensionProperties(layers[l].layerName, &nr_extensions, nullptr);
+			if (res != VkResult::VK_SUCCESS)
+				throw "";
+
+			extensions.clear();
+			extensions.resize(nr_extensions);
+			res = vkEnumerateInstanceExtensionProperties(layers[l].layerName, &nr_extensions, extensions.data());
+			if (res != VkResult::VK_SUCCESS)
+				throw "";
+
+			for (const auto& ext : extensions)
+			{
+				extensionsPerLayer.emplace(std::make_pair<std::string, std::string>(layers[l].layerName, ext.extensionName));
+			}
+		}
+
+		return true;
 	}
 
-	Platform* Platform::instance()
+	VKAPI_ATTR VkBool32 VKAPI_CALL VclVulkanDebugReport
+	(
+		VkDebugReportFlagsEXT       flags,
+		VkDebugReportObjectTypeEXT  objectType,
+		uint64_t                    object,
+		size_t                      location,
+		int32_t                     messageCode,
+		const char*                 pLayerPrefix,
+		const char*                 pMessage,
+		void*                       pUserData
+	)
 	{
-		Check(_implementation != nullptr, "Vulkan platorm is initialised.");
-		return _implementation;
+		std::cerr << pMessage << std::endl;
+		return VK_FALSE;
 	}
 
-	void Platform::dispose()
+	template<typename Func>
+	Func getInstanceProc(VkInstance inst, const char* name)
 	{
-		VCL_SAFE_DELETE(_implementation);
+		return reinterpret_cast<Func>(vkGetInstanceProcAddr(inst, name));
 	}
 
 	Platform::Platform()
@@ -66,12 +129,35 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		create_info.pApplicationInfo = nullptr;
 
 		// Enable additional layers
-		create_info.enabledLayerCount = 0;
-		create_info.ppEnabledLayerNames = nullptr;
+		std::vector<const char*> req_layers;
+#ifdef VCL_DEBUG
+		// Enable standard validation layers ba default, if they are available
+		if (std::find_if(std::begin(_availableLayers), std::end(_availableLayers), [](const VkLayerProperties& l)
+		{
+			return strcmp(l.layerName, "VK_LAYER_LUNARG_standard_validation") == 0;
+		}) != std::end(_availableLayers))
+		{
+			req_layers.push_back("VK_LAYER_LUNARG_standard_validation");
+		}
+#endif // VCL_DEBUG
+		create_info.enabledLayerCount = (uint32_t) req_layers.size();
+		create_info.ppEnabledLayerNames = req_layers.data();
 
 		// Enable additional extensions
-		create_info.enabledExtensionCount = 0;
-		create_info.ppEnabledExtensionNames = nullptr;
+		std::vector<const char*> req_ext;
+#ifdef VCL_DEBUG
+		// Enable the debug layer by default, if it is available
+		if (std::find_if(std::begin(_availableExtensions), std::end(_availableExtensions), [](const VkExtensionProperties& e)
+		{
+			return strcmp(e.extensionName, "VK_EXT_debug_report") == 0;
+		}) != std::end(_availableExtensions))
+		{
+			req_ext.push_back("VK_EXT_debug_report");
+		}
+#endif // VCL_DEBUG
+
+		create_info.enabledExtensionCount = (uint32_t) req_ext.size();
+		create_info.ppEnabledExtensionNames = req_ext.data();
 
 		// Create the instance
 		res = vkCreateInstance(&create_info, nullptr, &_instance);
@@ -94,11 +180,39 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		{
 			_devices.emplace_back(dev);
 		}
+
+		// Setup the debug callbacks when the reporting extension was requested
+		if (std::find_if(std::begin(req_ext), std::end(req_ext), [](const char* e)
+		{
+			return strcmp(e, "VK_EXT_debug_report") == 0;
+		}) != std::end(req_ext))
+		{
+			// Load VK_EXT_debug_report entry points in debug builds
+			vkCreateDebugReportCallbackEXT = getInstanceProc<PFN_vkCreateDebugReportCallbackEXT>(_instance, "vkCreateDebugReportCallbackEXT");
+			vkDebugReportMessageEXT = getInstanceProc<PFN_vkDebugReportMessageEXT>(_instance, "vkDebugReportMessageEXT");
+			vkDestroyDebugReportCallbackEXT = getInstanceProc<PFN_vkDestroyDebugReportCallbackEXT>(_instance, "vkDestroyDebugReportCallbackEXT");
+
+			// Setup callback creation information
+			VkDebugReportCallbackCreateInfoEXT callbackCreateInfo;
+			callbackCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT;
+			callbackCreateInfo.pNext = nullptr;
+			callbackCreateInfo.flags = 
+				VK_DEBUG_REPORT_ERROR_BIT_EXT | VK_DEBUG_REPORT_WARNING_BIT_EXT | VK_DEBUG_REPORT_PERFORMANCE_WARNING_BIT_EXT;
+			callbackCreateInfo.pfnCallback = &VclVulkanDebugReport;
+			callbackCreateInfo.pUserData = nullptr;
+
+			// Register the callback
+			VkResult result = vkCreateDebugReportCallbackEXT(_instance, &callbackCreateInfo, nullptr, &_debugCallback);
+		}
 	}
 
 	Platform::~Platform()
 	{
 		_devices.clear();
+
+		// Cleanup the debugging interface
+		if (_debugCallback)
+			vkDestroyDebugReportCallbackEXT(_instance, _debugCallback, nullptr);
 
 		// Cleanup the platform
 		vkDestroyInstance(_instance, nullptr);

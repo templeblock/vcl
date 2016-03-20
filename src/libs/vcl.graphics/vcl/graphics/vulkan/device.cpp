@@ -40,18 +40,109 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		VkPhysicalDeviceProperties dev_props;
 		vkGetPhysicalDeviceProperties(dev, &dev_props);
 
+		// Store the relevant data
+		_name = dev_props.deviceName;
+
+		// Enumerate layers and extensions
+		std::multimap<std::string, std::string> extensionsPerLayer;
+		enumerateLayersAndExtensions(_device, _availableLayers, _availableExtensions, extensionsPerLayer);
+
 		// Enumerate the number of queue families
 		uint32_t nr_queues = 0;
 		vkGetPhysicalDeviceQueueFamilyProperties(dev, &nr_queues, nullptr);
 
-		std::vector<VkQueueFamilyProperties> queue_families(nr_queues);
-		vkGetPhysicalDeviceQueueFamilyProperties(dev, &nr_queues, queue_families.data());
+		_queueFamilies.resize(nr_queues);
+		vkGetPhysicalDeviceQueueFamilyProperties(dev, &nr_queues, _queueFamilies.data());
 
 		// Enumerte the device features
-		VkPhysicalDeviceFeatures dev_features;
-		vkGetPhysicalDeviceFeatures(dev, &dev_features);
+		vkGetPhysicalDeviceFeatures(dev, &_features);
 
-		// Store the relevant data
-		_name = dev_props.deviceName;
+	}
+
+	std::unique_ptr<Context> Device::createContext()
+	{
+		// Enable additional layers
+		std::vector<const char*> req_layers;
+#ifdef VCL_DEBUG
+		// Enable standard validation layers ba default, if they are available
+		if (std::find_if(std::begin(_availableLayers), std::end(_availableLayers), [](const VkLayerProperties& l)
+		{
+			return strcmp(l.layerName, "VK_LAYER_LUNARG_standard_validation") == 0;
+		}) != std::end(_availableLayers))
+		{
+			req_layers.push_back("VK_LAYER_LUNARG_standard_validation");
+		}
+#endif // VCL_DEBUG
+
+		// Enable additional extensions
+		std::vector<const char*> req_ext;
+#ifdef VCL_DEBUG
+		// Enable the debug layer by default, if it is available
+		if (std::find_if(std::begin(_availableExtensions), std::end(_availableExtensions), [](const VkExtensionProperties& e)
+		{
+			return strcmp(e.extensionName, "VK_EXT_debug_report") == 0;
+		}) != std::end(_availableExtensions))
+		{
+			req_ext.push_back("VK_EXT_debug_report");
+		}
+#endif // VCL_DEBUG
+
+		return std::make_unique<Context>(_device, req_layers, req_ext);
+	}
+
+	void Device::enumerateLayersAndExtensions
+	(
+		VkPhysicalDevice device,
+		std::vector<VkLayerProperties>& layers,
+		std::vector<VkExtensionProperties>& availableExtensions,
+		std::multimap<std::string, std::string>& extensionsPerLayer
+	)
+	{
+		VkResult res;
+
+		// Enumerate device layers
+		uint32_t nr_layers = 0;
+		res = vkEnumerateDeviceLayerProperties(device, &nr_layers, nullptr);
+		if (res != VkResult::VK_SUCCESS)
+			throw "";
+
+		layers.resize(nr_layers);
+		res = vkEnumerateDeviceLayerProperties(device, &nr_layers, layers.data());
+		if (res != VkResult::VK_SUCCESS)
+			throw "";
+
+		// Enumerate the extensions
+		{
+			uint32_t nr_extensions = 0;
+			res = vkEnumerateDeviceExtensionProperties(device, "", &nr_extensions, nullptr);
+			if (res != VkResult::VK_SUCCESS)
+				throw "";
+
+			availableExtensions.clear();
+			availableExtensions.resize(nr_extensions);
+			res = vkEnumerateDeviceExtensionProperties(device, "", &nr_extensions, availableExtensions.data());
+			if (res != VkResult::VK_SUCCESS)
+				throw "";
+
+		}
+		std::vector<VkExtensionProperties> extensions;
+		for (uint32_t l = 0; l < nr_layers; l++)
+		{
+			uint32_t nr_extensions = 0;
+			res = vkEnumerateDeviceExtensionProperties(device, layers[l].layerName, &nr_extensions, nullptr);
+			if (res != VkResult::VK_SUCCESS)
+				throw "";
+
+			extensions.clear();
+			extensions.resize(nr_extensions);
+			res = vkEnumerateDeviceExtensionProperties(device, layers[l].layerName, &nr_extensions, extensions.data());
+			if (res != VkResult::VK_SUCCESS)
+				throw "";
+
+			for (const auto& ext : extensions)
+			{
+				extensionsPerLayer.emplace(std::make_pair<std::string, std::string>(layers[l].layerName, ext.extensionName));
+			}
+		}
 	}
 }}}

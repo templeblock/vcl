@@ -38,45 +38,9 @@
 
 int main(int argc, char* argv[])
 {
-	Vcl::Graphics::Vulkan::Platform::initialise();
-	auto platform = Vcl::Graphics::Vulkan::Platform::instance();
+	auto platform = std::make_unique<Vcl::Graphics::Vulkan::Platform>();
 	auto dev_config = platform->device(0);
-
-	VkDeviceCreateInfo dev_info;
-	dev_info.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	dev_info.pNext = nullptr;
-	dev_info.flags = 0;
-
-	// Queue info
-	float queuePriorities[] = { 0.0f, 0.0f };
-
-	VkDeviceQueueCreateInfo queue_info[1];
-	queue_info[0].sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queue_info[0].pNext = nullptr;
-	queue_info[0].flags = 0;
-	queue_info[0].queueCount = 1;
-	queue_info[0].queueFamilyIndex = 0;
-	queue_info[0].pQueuePriorities = queuePriorities;
-
-	dev_info.queueCreateInfoCount = 1;
-	dev_info.pQueueCreateInfos = queue_info;
-
-	// Enable additional layers
-	dev_info.enabledLayerCount = 0;
-	dev_info.ppEnabledLayerNames = nullptr;
-
-	// Enable additional extensions
-	dev_info.enabledExtensionCount = 0;
-	dev_info.ppEnabledExtensionNames = nullptr;
-
-	// Enable features
-	dev_info.pEnabledFeatures = nullptr;
-
-
-	VkDevice dev;
-	VkResult res = vkCreateDevice(dev_config, &dev_info, nullptr, &dev);
-	if (res != VkResult::VK_SUCCESS)
-		return 1;
+	auto ctx = dev_config.createContext();
 
 	return 0;
 }
