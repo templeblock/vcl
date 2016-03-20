@@ -36,59 +36,46 @@
 // GSL
 #include <vcl/core/3rdparty/gsl/span.h>
 
+// VCL
+#include <vcl/graphics/vulkan/context.h>
+
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	struct ContextQueueInfo
-	{
-		//! Index of the vulkan queue family
-		uint32_t FamilyIndex;
-	};
-
-	class CommandQueue final
+	class SwapChain final
 	{
 	public:
-		//! Constructor
-		CommandQueue(VkPhysicalDevice dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
+		/*!
+		 *	\brief Constructor
+		 *
+		 *	\param surface Vulkan surface for which this swap-chain should be used
+		 */
+		SwapChain(VkInstance instance, VkDevice device, VkSurfaceKHR surface);
 
 		//! Destructor
-		~CommandQueue();
+		~SwapChain();
 
-		//! Convert to Vulkan ID
-		inline operator VkQueue() const
+		//! Convert to OpenCL device ID
+		inline operator VkSwapchainKHR() const
 		{
-			return _queue;
+			return _swapchain;
 		}
 
 	private:
-		//! Vulkan device queue
-		VkQueue _queue;
-	};
-
-	class Context final
-	{
-	public:
-		//! Constructor
-		Context(VkPhysicalDevice dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
-
-		//! Destructor
-		~Context();
-
-		//! Convert to Vulkan ID
-		inline operator VkDevice() const
-		{
-			return _device;
-		}
-
-	public:
-		void queue(uint32_t idx);
+		//! Surface of this swap chain
+		VkSurfaceKHR _surface{ nullptr };
 		
+		//! Allocated swap-chain
+		VkSwapchainKHR _swapchain{ nullptr };
+
 	private:
-		//! Vulkan phyiscal device
-		VkPhysicalDevice _physicalDevice{ nullptr };
-
-		//! Vulkan device
-		VkDevice _device{ nullptr };
-
-		//! Queue families
+		PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR{ nullptr };
+		PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR{ nullptr };
+		PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR{ nullptr };
+		PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR{ nullptr };
+		PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR{ nullptr };
+		PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR{ nullptr };
+		PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR{ nullptr };
+		PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR{ nullptr };
+		PFN_vkQueuePresentKHR vkQueuePresentKHR{ nullptr };
 	};
 }}}

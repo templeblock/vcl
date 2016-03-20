@@ -22,73 +22,46 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#pragma once
-
-// VCL configuration
-#include <vcl/config/global.h>
+#include <vcl/graphics/vulkan/swapchain.h>
 
 // C++ standard library
-#include <string>
+#include <vector>
 
-// Vulkan
-#include <vulkan/vulkan.h>
-
-// GSL
-#include <vcl/core/3rdparty/gsl/span.h>
+// VCL
+#include <vcl/core/contract.h>
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	struct ContextQueueInfo
+	template<typename Func>
+	Func getInstanceProc(VkInstance inst, const char* name)
 	{
-		//! Index of the vulkan queue family
-		uint32_t FamilyIndex;
-	};
+		return reinterpret_cast<Func>(vkGetInstanceProcAddr(inst, name));
+	}
 
-	class CommandQueue final
+	template<typename Func>
+	Func getDeviceProc(VkDevice dev, const char* name)
 	{
-	public:
-		//! Constructor
-		CommandQueue(VkPhysicalDevice dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
+		return reinterpret_cast<Func>(vkGetDeviceProcAddr(dev, name));
+	}
 
-		//! Destructor
-		~CommandQueue();
+#define VCL_VK_GET_INSTANCE_PROC(instance, name) name = getInstanceProc<PFN_##name>(instance, #name)
+#define VCL_VK_GET_DEVICE_PROC(device, name) name = getDeviceProc<PFN_##name>(device, #name)
 
-		//! Convert to Vulkan ID
-		inline operator VkQueue() const
-		{
-			return _queue;
-		}
-
-	private:
-		//! Vulkan device queue
-		VkQueue _queue;
-	};
-
-	class Context final
+	SwapChain::SwapChain(VkInstance instance, VkDevice device, VkSurfaceKHR surface)
 	{
-	public:
-		//! Constructor
-		Context(VkPhysicalDevice dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
+		VCL_VK_GET_INSTANCE_PROC(instance, vkGetPhysicalDeviceSurfaceSupportKHR);
+		VCL_VK_GET_INSTANCE_PROC(instance, vkGetPhysicalDeviceSurfaceCapabilitiesKHR);
+		VCL_VK_GET_INSTANCE_PROC(instance, vkGetPhysicalDeviceSurfaceFormatsKHR);
+		VCL_VK_GET_INSTANCE_PROC(instance, vkGetPhysicalDeviceSurfacePresentModesKHR);
+		VCL_VK_GET_DEVICE_PROC(device, vkCreateSwapchainKHR);
+		VCL_VK_GET_DEVICE_PROC(device, vkDestroySwapchainKHR);
+		VCL_VK_GET_DEVICE_PROC(device, vkGetSwapchainImagesKHR);
+		VCL_VK_GET_DEVICE_PROC(device, vkAcquireNextImageKHR);
+		VCL_VK_GET_DEVICE_PROC(device, vkQueuePresentKHR);
+	}
 
-		//! Destructor
-		~Context();
+	SwapChain::~SwapChain()
+	{
 
-		//! Convert to Vulkan ID
-		inline operator VkDevice() const
-		{
-			return _device;
-		}
-
-	public:
-		void queue(uint32_t idx);
-		
-	private:
-		//! Vulkan phyiscal device
-		VkPhysicalDevice _physicalDevice{ nullptr };
-
-		//! Vulkan device
-		VkDevice _device{ nullptr };
-
-		//! Queue families
-	};
+	}
 }}}

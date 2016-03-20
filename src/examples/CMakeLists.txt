@@ -1,3 +1,6 @@
+# Add GLFW to build graphics examples with simple windows
+SUBDIRS(glfw)
+
 SUBDIRS(meshviewer)
 SUBDIRS(simd)
 
