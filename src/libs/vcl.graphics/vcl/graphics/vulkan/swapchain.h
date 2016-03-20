@@ -49,7 +49,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		 *
 		 *	\param surface Vulkan surface for which this swap-chain should be used
 		 */
-		SwapChain(VkInstance instance, VkDevice device, VkSurfaceKHR surface);
+		SwapChain(VkInstance instance, VkPhysicalDevice device, VkDevice context, VkSurfaceKHR surface);
 
 		//! Destructor
 		~SwapChain();
@@ -61,11 +61,26 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		}
 
 	private:
+		//! Owner instance
+		VkInstance _instance{ nullptr };
+		
+		//! Owner physical device
+		VkPhysicalDevice _device{ nullptr };
+		
+		//! Owner device
+		VkDevice _context{ nullptr };
+
 		//! Surface of this swap chain
 		VkSurfaceKHR _surface{ nullptr };
 		
 		//! Allocated swap-chain
 		VkSwapchainKHR _swapchain{ nullptr };
+
+		//! Selected colour format
+		VkFormat _colourFormat;
+
+		//! Selected colour space
+		VkColorSpaceKHR _colourSpace;
 
 	private:
 		PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR{ nullptr };

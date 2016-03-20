@@ -38,6 +38,7 @@
 
 // VCL
 #include <vcl/graphics/vulkan/platform.h>
+#include <vcl/graphics/vulkan/swapchain.h>
 
 class GlfwInstance
 {
@@ -54,6 +55,10 @@ public:
 
 		// Check Vulkan support
 		_vulkanSupport = glfwVulkanSupported() != 0 ? true : false;
+		
+		unsigned int nr_exts = 0;
+		auto exts = glfwGetRequiredInstanceExtensions(&nr_exts);
+		_vulkanExtensions = { exts, nr_exts };
 	}
 
 	~GlfwInstance()
@@ -63,7 +68,11 @@ public:
 	}
 
 public:
+	//! \returns true if vulkan is supported
 	bool isVulkanSupported() const { return _vulkanSupport; }
+
+	//! \returns the required vulkan extensions
+	gsl::span<const char*> vulkanExtensions() const { return _vulkanExtensions; }
 
 private:
 	static void errorCallback(int error, const char* description)
@@ -76,18 +85,32 @@ private:
 
 	//! Query if Vulkan is supported
 	bool _vulkanSupport{ false };
+
+	//! Required Vulkan extensions
+	gsl::span<const char*> _vulkanExtensions;
 };
 
 
 int main(int argc, char* argv[])
 {
-	auto platform = std::make_unique<Vcl::Graphics::Vulkan::Platform>();
-	//auto dev = platform->device(0);
-	//auto ctx = dev.createContext();
+	using namespace Vcl::Graphics::Vulkan;
 
 	GlfwInstance glfw;
-	//glfwGetRequiredInstanceExtensions();
-	
+	if (!glfw.isVulkanSupported())
+	{
+		std::cerr << "Vulkan is not supported" << std::endl;
+		return 1;
+	}
+
+	// Vulkan extension
+	std::array<const char*, 1> context_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+
+	// Initialize the Vulkan platform
+	auto platform = std::make_unique<Vcl::Graphics::Vulkan::Platform>(glfw.vulkanExtensions());
+	auto device = platform->device(0);
+	auto context = device.createContext(context_extensions);
+
+	// Create a window
 	auto window = glfwCreateWindow(1280, 768, "Vulkan Demo", nullptr, nullptr);
 	if (!window)
 	{
@@ -99,6 +122,10 @@ int main(int argc, char* argv[])
 	VkSurfaceKHR surface;
 	glfwCreateWindowSurface(*platform, window, nullptr, &surface);
 
+	// Create a swap-chain
+	SwapChain swapchain{ *platform, device, *context, surface };
+
+	// Enter the event-loop
 	while (!glfwWindowShouldClose(window))
 	{
 		glfwPollEvents();
