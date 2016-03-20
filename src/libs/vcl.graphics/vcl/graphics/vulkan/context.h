@@ -28,70 +28,44 @@
 #include <vcl/config/global.h>
 
 // C++ standard library
-#include <map>
-#include <memory>
 #include <string>
-#include <vector>
 
 // Vulkan
 #include <vulkan/vulkan.h>
 
-// VCL
-#include <vcl/graphics/vulkan/device.h>
+// GSL
+#include <vcl/core/3rdparty/gsl/span.h>
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	struct PlatformDesc
+	struct ContextQueueInfo
 	{
-		const char* ApplicationName;
-
-		uint32_t NrLayers;
-		const char** Layers;
-
-		uint32_t NrExtensions;
-		const char** Extensions;
+		//! Index of the vulkan queue family
+		uint32_t FamilyIndex;
 	};
 
-	class Platform final
+	class Context final
 	{
 	public:
-		Platform();
-		~Platform();
+		//! Constructor
+		Context(VkPhysicalDevice dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
 
-	public: // Query layers
-		static const std::vector<VkLayerProperties>& availableLayers() { return _availableLayers; }
-		static const std::vector<VkExtensionProperties>& availableExtensions() { return _availableExtensions; }
+		//! Destructor
+		~Context();
 
-	public:
-		int nrDevices() const;
-		const Device& device(int idx) const;
-
+		//! Convert to OpenCL device ID
+		inline operator VkDevice() const
+		{
+			return _device;
+		}
+		
 	private:
-		//! Vulkan instance pointer
-		VkInstance _instance{ nullptr };
+		//! Vulkan phyiscal device
+		VkPhysicalDevice _physicalDevice{ nullptr };
 
-		//! List of available vulkan devices
-		std::vector<Device> _devices;
+		//! Vulkan device
+		VkDevice _device{ nullptr };
 
-		//! Debug callback of this platform instance
-		VkDebugReportCallbackEXT _debugCallback;
-
-	private: // Debug extension callbacks
-		PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
-		PFN_vkDebugReportMessageEXT vkDebugReportMessageEXT;
-		PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
-
-	private:
-		//! Indicate if the layers were loaded
-		static bool _platformInitialized;
-
-		//! Available extensions
-		static std::vector<VkLayerProperties> _availableLayers;
-
-		//! Available instance extensions
-		static std::vector<VkExtensionProperties> _availableExtensions;
-
-		//! Extensions for each layer
-		static std::multimap<std::string, std::string> _extensionsPerLayer;
+		//! Queue families
 	};
 }}}

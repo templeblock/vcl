@@ -28,21 +28,27 @@
 #include <vcl/config/global.h>
 
 // C++ standard library
+#include <map>
+#include <memory>
 #include <string>
+#include <vector>
 
 // Vulkan
 #include <vulkan/vulkan.h>
 
+// VCL
+#include <vcl/graphics/vulkan/context.h>
+
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	class Device
+	class Device final
 	{
 	public:
 		//! Constructor
 		Device(VkPhysicalDevice dev);
 
 		//! Destructor
-		virtual ~Device() = default;
+		~Device() = default;
 
 		//! Convert to OpenCL device ID
 		inline operator VkPhysicalDevice() const
@@ -52,6 +58,18 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 
 		//! \returns the name of this device
 		const std::string& name() const { return _name; }
+		
+		//! \returns a new context object
+		std::unique_ptr<Context> createContext();
+
+	private:
+		static void enumerateLayersAndExtensions
+		(
+			VkPhysicalDevice device,
+			std::vector<VkLayerProperties>& layers,
+			std::vector<VkExtensionProperties>& availableExtensions,
+			std::multimap<std::string, std::string>& extensionsPerLayer
+		);
 
 	private:
 		//! Vulkan phyiscal device
@@ -60,6 +78,19 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		//! Name of this device
 		std::string _name;
 
-		//! Queue families
+		//! Available extensions
+		std::vector<VkLayerProperties> _availableLayers;
+
+		//! Available instance extensions
+		std::vector<VkExtensionProperties> _availableExtensions;
+
+		//! Extensions for each layer
+		std::multimap<std::string, std::string> _extensionsPerLayer;
+
+		//! Available queue families
+		std::vector<VkQueueFamilyProperties> _queueFamilies;
+
+		//! Device features
+		VkPhysicalDeviceFeatures _features;
 	};
 }}}

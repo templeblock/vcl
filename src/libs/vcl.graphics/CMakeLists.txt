@@ -114,10 +114,12 @@ SET(VCL_GRAPHICS_SHADOWS_SRC
 
 # VCL / GRAPHICS / VULKAN
 SET(VCL_GRAPHICS_VULKAN_INC
+	vcl/graphics/vulkan/context.h
 	vcl/graphics/vulkan/device.h
 	vcl/graphics/vulkan/platform.h
 )
 SET(VCL_GRAPHICS_VULKAN_SRC
+	vcl/graphics/vulkan/context.cpp
 	vcl/graphics/vulkan/device.cpp
 	vcl/graphics/vulkan/platform.cpp
 )
