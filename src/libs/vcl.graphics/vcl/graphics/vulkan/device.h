@@ -50,17 +50,22 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		//! Destructor
 		~Device() = default;
 
-		//! Convert to OpenCL device ID
+		//! Convert to Vulkan ID
 		inline operator VkPhysicalDevice() const
 		{
 			return _device;
 		}
 
+	public:
+		//! \returns a new context object
+		std::unique_ptr<Context> createContext();
+
+	public:
 		//! \returns the name of this device
 		const std::string& name() const { return _name; }
 		
-		//! \returns a new context object
-		std::unique_ptr<Context> createContext();
+		//! \returns the number of available heaps
+		//std::vector
 
 	private:
 		static void enumerateLayersAndExtensions
@@ -92,5 +97,8 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 
 		//! Device features
 		VkPhysicalDeviceFeatures _features;
+
+		//! Device memory configuration
+		VkPhysicalDeviceMemoryProperties _memory;
 	};
 }}}

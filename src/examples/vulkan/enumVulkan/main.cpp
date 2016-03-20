@@ -33,14 +33,76 @@
 // Vulkan API
 #include <vulkan/vulkan.h>
 
+// GLFW
+#include <GLFW/glfw3.h>
+
 // VCL
 #include <vcl/graphics/vulkan/platform.h>
+
+class GlfwInstance
+{
+public:
+	GlfwInstance()
+	{
+		glfwSetErrorCallback(errorCallback);
+		_isInitialized = glfwInit() != 0 ? true : false;
+		if (!_isInitialized)
+			throw std::runtime_error{ "Unexpected error when initializing GLFW" };
+
+		// Since we are using vulkan we do not need any predefined client API
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
+
+		// Check Vulkan support
+		_vulkanSupport = glfwVulkanSupported() != 0 ? true : false;
+	}
+
+	~GlfwInstance()
+	{
+		if (_isInitialized)
+			glfwTerminate();
+	}
+
+public:
+	bool isVulkanSupported() const { return _vulkanSupport; }
+
+private:
+	static void errorCallback(int error, const char* description)
+	{
+		fprintf(stderr, "Error: %s\n", description);
+	}
+
+private:
+	bool _isInitialized{ false };
+
+	//! Query if Vulkan is supported
+	bool _vulkanSupport{ false };
+};
+
 
 int main(int argc, char* argv[])
 {
 	auto platform = std::make_unique<Vcl::Graphics::Vulkan::Platform>();
-	auto dev_config = platform->device(0);
-	auto ctx = dev_config.createContext();
+	//auto dev = platform->device(0);
+	//auto ctx = dev.createContext();
+
+	GlfwInstance glfw;
+	//glfwGetRequiredInstanceExtensions();
+	
+	auto window = glfwCreateWindow(1280, 768, "Vulkan Demo", nullptr, nullptr);
+	if (!window)
+	{
+		std::cerr << "Cannot create a window in which to draw!" << std::endl;
+		return 1;
+	}
+	
+	// Create a WSI surface for the window
+	VkSurfaceKHR surface;
+	glfwCreateWindowSurface(*platform, window, nullptr, &surface);
+
+	while (!glfwWindowShouldClose(window))
+	{
+		glfwPollEvents();
+	}
 
 	return 0;
 }

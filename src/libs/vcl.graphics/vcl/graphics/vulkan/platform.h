@@ -58,6 +58,12 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		Platform();
 		~Platform();
 
+		//! Convert to Vulkan ID
+		inline operator VkInstance() const
+		{
+			return _instance;
+		}
+
 	public: // Query layers
 		static const std::vector<VkLayerProperties>& availableLayers() { return _availableLayers; }
 		static const std::vector<VkExtensionProperties>& availableExtensions() { return _availableExtensions; }

@@ -22,7 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#include <vcl/graphics/vulkan/Context.h>
+#include <vcl/graphics/vulkan/context.h>
 
 // C++ standard library
 #include <iostream>
@@ -77,5 +77,10 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 	Context::~Context()
 	{
 		vkDestroyDevice(_device, nullptr);
+	}
+
+	void Context::queue(uint32_t idx)
+	{
+		vkGetDeviceQueue(_device, 0, idx, nullptr);
 	}
 }}}

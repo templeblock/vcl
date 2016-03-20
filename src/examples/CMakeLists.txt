@@ -1,5 +1,9 @@
+# Add GLFW to build graphics examples with simple windows
+SUBDIRS(glfw)
 
 SUBDIRS(rtti)
+
+SUBDIRS(meshviewer)
 SUBDIRS(simd)
 
 IF(VCL_OPENGL_SUPPORT)

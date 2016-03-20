@@ -44,8 +44,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		_name = dev_props.deviceName;
 
 		// Enumerate layers and extensions
-		std::multimap<std::string, std::string> extensionsPerLayer;
-		enumerateLayersAndExtensions(_device, _availableLayers, _availableExtensions, extensionsPerLayer);
+		enumerateLayersAndExtensions(_device, _availableLayers, _availableExtensions, _extensionsPerLayer);
 
 		// Enumerate the number of queue families
 		uint32_t nr_queues = 0;
@@ -57,6 +56,8 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		// Enumerte the device features
 		vkGetPhysicalDeviceFeatures(dev, &_features);
 
+		// Query the available memory
+		vkGetPhysicalDeviceMemoryProperties(dev, &_memory);
 	}
 
 	std::unique_ptr<Context> Device::createContext()
