@@ -58,7 +58,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 
 	public:
 		//! \returns a new context object
-		std::unique_ptr<Context> createContext();
+		std::unique_ptr<Context> createContext(gsl::span<const char*> extensions = gsl::span<const char*>{});
 
 	public:
 		//! \returns the name of this device

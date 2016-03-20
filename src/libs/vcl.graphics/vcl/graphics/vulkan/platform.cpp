@@ -115,7 +115,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		return reinterpret_cast<Func>(vkGetInstanceProcAddr(inst, name));
 	}
 
-	Platform::Platform()
+	Platform::Platform(gsl::span<const char*> requested_extensions)
 	{
 		VkResult res;
 
@@ -144,20 +144,27 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		create_info.ppEnabledLayerNames = req_layers.data();
 
 		// Enable additional extensions
-		std::vector<const char*> req_ext;
+		std::vector<const char*> exts(std::begin(requested_extensions), std::end(requested_extensions));
+
 #ifdef VCL_DEBUG
 		// Enable the debug layer by default, if it is available
-		if (std::find_if(std::begin(_availableExtensions), std::end(_availableExtensions), [](const VkExtensionProperties& e)
+		if (std::find_if(std::begin(exts), std::end(exts), [](const char* ext)
 		{
-			return strcmp(e.extensionName, "VK_EXT_debug_report") == 0;
-		}) != std::end(_availableExtensions))
+			return strcmp(ext, "VK_EXT_debug_report") == 0;
+		}) == std::end(exts))
 		{
-			req_ext.push_back("VK_EXT_debug_report");
+			if (std::find_if(std::begin(_availableExtensions), std::end(_availableExtensions), [](const VkExtensionProperties& e)
+			{
+				return strcmp(e.extensionName, "VK_EXT_debug_report") == 0;
+			}) != std::end(_availableExtensions))
+			{
+				exts.push_back("VK_EXT_debug_report");
+			}
 		}
 #endif // VCL_DEBUG
 
-		create_info.enabledExtensionCount = (uint32_t) req_ext.size();
-		create_info.ppEnabledExtensionNames = req_ext.data();
+		create_info.enabledExtensionCount = static_cast<uint32_t>(exts.size());
+		create_info.ppEnabledExtensionNames = exts.data();
 
 		// Create the instance
 		res = vkCreateInstance(&create_info, nullptr, &_instance);
@@ -182,10 +189,10 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		}
 
 		// Setup the debug callbacks when the reporting extension was requested
-		if (std::find_if(std::begin(req_ext), std::end(req_ext), [](const char* e)
+		if (std::find_if(std::begin(exts), std::end(exts), [](const char* e)
 		{
 			return strcmp(e, "VK_EXT_debug_report") == 0;
-		}) != std::end(req_ext))
+		}) != std::end(exts))
 		{
 			// Load VK_EXT_debug_report entry points in debug builds
 			vkCreateDebugReportCallbackEXT = getInstanceProc<PFN_vkCreateDebugReportCallbackEXT>(_instance, "vkCreateDebugReportCallbackEXT");

@@ -60,7 +60,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		vkGetPhysicalDeviceMemoryProperties(dev, &_memory);
 	}
 
-	std::unique_ptr<Context> Device::createContext()
+	std::unique_ptr<Context> Device::createContext(gsl::span<const char*> extensions)
 	{
 		// Enable additional layers
 		std::vector<const char*> req_layers;
@@ -76,17 +76,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 #endif // VCL_DEBUG
 
 		// Enable additional extensions
-		std::vector<const char*> req_ext;
-#ifdef VCL_DEBUG
-		// Enable the debug layer by default, if it is available
-		if (std::find_if(std::begin(_availableExtensions), std::end(_availableExtensions), [](const VkExtensionProperties& e)
-		{
-			return strcmp(e.extensionName, "VK_EXT_debug_report") == 0;
-		}) != std::end(_availableExtensions))
-		{
-			req_ext.push_back("VK_EXT_debug_report");
-		}
-#endif // VCL_DEBUG
+		std::vector<const char*> req_ext(std::begin(extensions), std::end(extensions));
 
 		return std::make_unique<Context>(_device, req_layers, req_ext);
 	}

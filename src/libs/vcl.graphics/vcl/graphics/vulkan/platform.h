@@ -55,7 +55,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 	class Platform final
 	{
 	public:
-		Platform();
+		Platform(gsl::span<const char*> extensions);
 		~Platform();
 
 		//! Convert to Vulkan ID
