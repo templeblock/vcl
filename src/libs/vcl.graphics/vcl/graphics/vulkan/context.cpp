@@ -68,7 +68,6 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		dev_info.queueCreateInfoCount = 1;
 		dev_info.pQueueCreateInfos = queue_info;
 
-
 		VkResult res = vkCreateDevice(_physicalDevice, &dev_info, nullptr, &_device);
 		if (res != VkResult::VK_SUCCESS)
 			throw "";
@@ -79,8 +78,11 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		vkDestroyDevice(_device, nullptr);
 	}
 
-	void Context::queue(uint32_t idx)
+	VkQueue Context::queue(uint32_t idx)
 	{
-		vkGetDeviceQueue(_device, 0, idx, nullptr);
+		VkQueue q;
+		vkGetDeviceQueue(_device, 0, idx, &q);
+
+		return q;
 	}
 }}}

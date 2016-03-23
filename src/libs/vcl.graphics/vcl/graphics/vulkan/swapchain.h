@@ -29,6 +29,7 @@
 
 // C++ standard library
 #include <string>
+#include <vector>
 
 // Vulkan
 #include <vulkan/vulkan.h>
@@ -41,7 +42,7 @@
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	class SwapChain final
+	class Surface final
 	{
 	public:
 		/*!
@@ -49,15 +50,15 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		 *
 		 *	\param surface Vulkan surface for which this swap-chain should be used
 		 */
-		SwapChain(VkInstance instance, VkPhysicalDevice device, VkDevice context, VkSurfaceKHR surface);
+		Surface(VkInstance instance, VkPhysicalDevice device, VkSurfaceKHR surface);
 
 		//! Destructor
-		~SwapChain();
+		~Surface();
 
 		//! Convert to OpenCL device ID
-		inline operator VkSwapchainKHR() const
+		inline operator VkSurfaceKHR() const
 		{
-			return _swapchain;
+			return _surface;
 		}
 
 	private:
@@ -67,30 +68,91 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		//! Owner physical device
 		VkPhysicalDevice _device{ nullptr };
 		
-		//! Owner device
-		VkDevice _context{ nullptr };
-
 		//! Surface of this swap chain
 		VkSurfaceKHR _surface{ nullptr };
-		
-		//! Allocated swap-chain
-		VkSwapchainKHR _swapchain{ nullptr };
-
-		//! Selected colour format
-		VkFormat _colourFormat;
-
-		//! Selected colour space
-		VkColorSpaceKHR _colourSpace;
 
 	private:
 		PFN_vkGetPhysicalDeviceSurfaceSupportKHR vkGetPhysicalDeviceSurfaceSupportKHR{ nullptr };
 		PFN_vkGetPhysicalDeviceSurfaceCapabilitiesKHR vkGetPhysicalDeviceSurfaceCapabilitiesKHR{ nullptr };
 		PFN_vkGetPhysicalDeviceSurfaceFormatsKHR vkGetPhysicalDeviceSurfaceFormatsKHR{ nullptr };
 		PFN_vkGetPhysicalDeviceSurfacePresentModesKHR vkGetPhysicalDeviceSurfacePresentModesKHR{ nullptr };
+	};
+
+	struct SwapChainDescription
+	{
+		//! Handle to the surface used
+		VkSurfaceKHR Surface;
+
+		//! Number of images
+		uint32_t NumberOfImages;
+
+		//! Select colour format
+		VkFormat ColourFormat;
+
+		//! Select colour space
+		VkColorSpaceKHR ColourSpace;
+
+		//! Requested width
+		uint32_t Width;
+
+		//! Requested height
+		uint32_t Height;
+
+		//! Mode to present image
+		VkPresentModeKHR PresentMode;
+
+		//!
+		VkSurfaceTransformFlagBitsKHR PreTransform;
+	};
+
+	class SwapChain final
+	{
+	public:
+		//! Constructor
+		SwapChain(VkDevice context, VkCommandBuffer cmd_buffer, const SwapChainDescription& desc);
+
+		//! Destructor
+		~SwapChain();
+
+		//! Convert to OpenCL device ID
+		inline operator VkSwapchainKHR() const
+		{
+			return _swapchain;
+		}
+		
+	public:
+		//! Aquire the next image of the swap-chain
+		VkResult acquireNextImage(VkSemaphore presentCompleteSemaphore, uint32_t* currentBuffer);
+
+		//! Present the buffer to the queue
+		VkResult queuePresent(VkQueue queue, uint32_t currentBuffer);
+
+		//! Present the buffer to the queue
+		VkResult queuePresent(VkQueue queue, uint32_t currentBuffer, VkSemaphore waitSemaphore);
+
+
+	private:
+		//! Owner device
+		VkDevice _context{ nullptr };
+
+		//! Description
+		SwapChainDescription _desc;
+
+		//! Allocated swap-chain
+		VkSwapchainKHR _swapchain{ nullptr };
+		
+		//! Swap chain images
+		std::vector<VkImage> _images;
+
+		//! Swap chain image views
+		std::vector<VkImageView> _views;
+
+	private:
 		PFN_vkCreateSwapchainKHR vkCreateSwapchainKHR{ nullptr };
 		PFN_vkDestroySwapchainKHR vkDestroySwapchainKHR{ nullptr };
 		PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR{ nullptr };
 		PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR{ nullptr };
 		PFN_vkQueuePresentKHR vkQueuePresentKHR{ nullptr };
 	};
+
 }}}

@@ -118,6 +118,7 @@ SET(VCL_GRAPHICS_VULKAN_INC
 	vcl/graphics/vulkan/device.h
 	vcl/graphics/vulkan/platform.h
 	vcl/graphics/vulkan/swapchain.h
+	vcl/graphics/vulkan/tools.h
 )
 SET(VCL_GRAPHICS_VULKAN_SRC
 	vcl/graphics/vulkan/context.cpp
