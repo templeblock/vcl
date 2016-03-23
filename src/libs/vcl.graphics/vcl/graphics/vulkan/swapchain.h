@@ -55,7 +55,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		//! Destructor
 		~Surface();
 
-		//! Convert to OpenCL device ID
+		//! Convert to Vulkan ID
 		inline operator VkSurfaceKHR() const
 		{
 			return _surface;
@@ -114,7 +114,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		//! Destructor
 		~SwapChain();
 
-		//! Convert to OpenCL device ID
+		//! Convert to Vulkan ID
 		inline operator VkSwapchainKHR() const
 		{
 			return _swapchain;

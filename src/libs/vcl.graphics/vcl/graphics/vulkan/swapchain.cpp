@@ -182,6 +182,9 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 
 	SwapChain::~SwapChain()
 	{
+		for (uint32_t i = 0; i < _images.size(); i++)
+			vkDestroyImageView(_context, _views[i], nullptr);
+
 		if (_swapchain)
 			vkDestroySwapchainKHR(_context, _swapchain, nullptr);
 	}

@@ -38,37 +38,67 @@
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	struct ContextQueueInfo
-	{
-		//! Index of the vulkan queue family
-		uint32_t FamilyIndex;
-	};
-	
-	class Context final
+	class CommandPool
 	{
 	public:
-		//! Constructor
-		Context(VkPhysicalDevice dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
-
-		//! Destructor
-		~Context();
+		CommandPool(VkDevice device, uint32_t queue_family);
+		~CommandPool();
 
 		//! Convert to Vulkan ID
-		inline operator VkDevice() const
+		inline operator VkCommandPool() const
 		{
-			return _device;
+			return _pool;
+		}
+
+	private:
+		VkDevice _device;
+		VkCommandPool _pool;
+	};
+
+	class CommandBuffer
+	{
+	public:
+		CommandBuffer(VkDevice device, VkCommandPool pool);
+		~CommandBuffer();
+
+		//! Convert to Vulkan ID
+		inline operator VkCommandBuffer() const
+		{
+			return _cmdBuffer;
 		}
 
 	public:
-		VkQueue queue(uint32_t idx);
-		
+		void begin();
+		void end();
+
 	private:
-		//! Vulkan phyiscal device
-		VkPhysicalDevice _physicalDevice{ nullptr };
+		VkDevice _device;
+		VkCommandPool _pool;
+		VkCommandBuffer _cmdBuffer{ nullptr };
+	};
 
-		//! Vulkan device
-		VkDevice _device{ nullptr };
+	class CommandQueue final
+	{
+	public:
+		//! Constructor
+		CommandQueue(VkQueue queue);
 
-		//! Queue families
+		//! Destructor
+		~CommandQueue();
+
+		//! Convert to Vulkan ID
+		inline operator VkQueue() const
+		{
+			return _queue;
+		}
+
+	public:
+		void submit(const CommandBuffer& buffer);
+
+		void waitIdle();
+
+	private:
+		//! Vulkan device queue
+		VkQueue _queue;
 	};
 }}}
