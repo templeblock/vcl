@@ -51,9 +51,15 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 	)
 	{
 		// Create an image barrier object
-		VkImageMemoryBarrier imageMemoryBarrier = vkTools::initializers::imageMemoryBarrier();
+		VkImageMemoryBarrier imageMemoryBarrier;
+		imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		imageMemoryBarrier.pNext = nullptr;
+		imageMemoryBarrier.srcAccessMask = 0;
+		imageMemoryBarrier.dstAccessMask = 0;
 		imageMemoryBarrier.oldLayout = oldImageLayout;
 		imageMemoryBarrier.newLayout = newImageLayout;
+		imageMemoryBarrier.srcQueueFamilyIndex = 0;
+		imageMemoryBarrier.dstQueueFamilyIndex = 0;
 		imageMemoryBarrier.image = image;
 		imageMemoryBarrier.subresourceRange = subresourceRange;
 
@@ -168,63 +174,4 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		subresourceRange.layerCount = 1;
 		setImageLayout(cmdbuffer, image, aspectMask, oldImageLayout, newImageLayout, subresourceRange);
 	}
-
-	VkCommandPool createCommandPool(VkDevice device, uint32_t queue_family)
-	{
-		VkCommandPoolCreateInfo cmd_pool_info;
-		cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		cmd_pool_info.pNext = nullptr;
-		cmd_pool_info.queueFamilyIndex = queue_family;
-		cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
-
-		VkCommandPool cmd_pool;
-		VkResult res = vkCreateCommandPool(device, &cmd_pool_info, nullptr, &cmd_pool);
-		Check(res == VK_SUCCESS, "Command pool was created.");
-	}
-
-	class CommandBuffer
-	{
-	public:
-		CommandBuffer(VkDevice device, VkCommandPool pool)
-		: _device(device)
-		, _pool(pool)
-		{
-			VkCommandBufferAllocateInfo info;
-			info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-			info.commandPool = pool;
-			info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-			info.commandBufferCount = 1;
-			
-			VkResult res = vkAllocateCommandBuffers(device, &info, &_cmdBuffer);
-			Check(res == VK_SUCCESS, "Command buffer was created.");
-		}
-
-		~CommandBuffer()
-		{
-			vkFreeCommandBuffers(_device, _pool, 1, &_cmdBuffer);
-		}
-
-		void begin()
-		{
-			VkCommandBufferBeginInfo info;
-			info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-			info.pNext = nullptr;
-			info.flags = 0;
-			info.pInheritanceInfo = nullptr;
-
-			VkResult res = vkBeginCommandBuffer(_cmdBuffer, &info);
-			Check(res == VK_SUCCESS, "Command buffer recording began.");
-		}
-
-		void end()
-		{
-			VkResult res = vkEndCommandBuffer(_cmdBuffer);
-			Check(res == VK_SUCCESS, "Command buffer recording ended.");
-		}
-
-	private:
-		VkDevice _device;
-		VkCommandPool _pool;
-		VkCommandBuffer _cmdBuffer{ nullptr };
-	};
 }}}

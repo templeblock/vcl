@@ -37,6 +37,7 @@
 #include <GLFW/glfw3.h>
 
 // VCL
+#include <vcl/graphics/vulkan/commands.h>
 #include <vcl/graphics/vulkan/platform.h>
 #include <vcl/graphics/vulkan/swapchain.h>
 
@@ -106,12 +107,15 @@ int main(int argc, char* argv[])
 	std::array<const char*, 1> context_extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
 	// Initialize the Vulkan platform
-	auto platform = std::make_unique<Vcl::Graphics::Vulkan::Platform>(glfw.vulkanExtensions());
+	auto platform = std::make_unique<Platform>(glfw.vulkanExtensions());
 	auto device = platform->device(0);
 	auto context = device.createContext(context_extensions);
+	CommandQueue queue{ context->queue(0) };
+	CommandPool pool{ *context, 0};
+	CommandBuffer setup_buffer{ *context, pool };
 
 	// Create a window
-	auto window = glfwCreateWindow(1280, 768, "Vulkan Demo", nullptr, nullptr);
+	auto window = glfwCreateWindow(1280, 720, "Vulkan Demo", nullptr, nullptr);
 	if (!window)
 	{
 		std::cerr << "Cannot create a window in which to draw!" << std::endl;
@@ -126,8 +130,23 @@ int main(int argc, char* argv[])
 
 	// Create a swap-chain
 	Surface surface{ *platform, device, surface_ctx };
-	//SwapChain swapchain{ *context };
 
+	SwapChainDescription desc;
+	desc.Surface = surface;
+	desc.NumberOfImages = 1;
+	desc.ColourFormat = VK_FORMAT_B8G8R8A8_UNORM;
+	desc.ColourSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
+	desc.Width = 1280;
+	desc.Height = 720;
+	desc.PresentMode = VK_PRESENT_MODE_FIFO_KHR;
+	desc.PreTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
+
+	setup_buffer.begin();
+	SwapChain swapchain{ *context, setup_buffer, desc };
+	setup_buffer.end();
+	queue.submit(setup_buffer);
+	queue.waitIdle();
+	
 	// End: Setup surface and swap-chain
 
 	// Enter the event-loop
