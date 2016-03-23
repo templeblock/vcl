@@ -118,12 +118,17 @@ int main(int argc, char* argv[])
 		return 1;
 	}
 	
+	// Begin: Setup surface and swap-chain
+
 	// Create a WSI surface for the window
-	VkSurfaceKHR surface;
-	glfwCreateWindowSurface(*platform, window, nullptr, &surface);
+	VkSurfaceKHR surface_ctx;
+	glfwCreateWindowSurface(*platform, window, nullptr, &surface_ctx);
 
 	// Create a swap-chain
-	SwapChain swapchain{ *platform, device, *context, surface };
+	Surface surface{ *platform, device, surface_ctx };
+	//SwapChain swapchain{ *context };
+
+	// End: Setup surface and swap-chain
 
 	// Enter the event-loop
 	while (!glfwWindowShouldClose(window))

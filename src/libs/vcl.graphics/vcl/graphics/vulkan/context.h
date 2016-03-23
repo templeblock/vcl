@@ -48,7 +48,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 	{
 	public:
 		//! Constructor
-		CommandQueue(VkPhysicalDevice dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
+		CommandQueue();
 
 		//! Destructor
 		~CommandQueue();
@@ -58,6 +58,11 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		{
 			return _queue;
 		}
+
+	public:
+		void submit();
+
+		void waitIdle();
 
 	private:
 		//! Vulkan device queue
@@ -80,7 +85,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		}
 
 	public:
-		void queue(uint32_t idx);
+		VkQueue queue(uint32_t idx);
 		
 	private:
 		//! Vulkan phyiscal device
