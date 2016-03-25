@@ -30,10 +30,11 @@
 
 // VCL
 #include <vcl/core/contract.h>
+#include <vcl/graphics/vulkan/device.h>
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	Context::Context(VkPhysicalDevice dev, gsl::span<const char*> layers, gsl::span<const char*> extensions)
+	Context::Context(Device* dev, gsl::span<const char*> layers, gsl::span<const char*> extensions)
 	: _physicalDevice(dev)
 	{
 		// Properties of the device
@@ -52,8 +53,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 
 		// Enable features
 		dev_info.pEnabledFeatures = nullptr;
-
-
+		
 		// Queue info
 		float queuePriorities[] = { 0.0f, 0.0f };
 
@@ -68,13 +68,26 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		dev_info.queueCreateInfoCount = 1;
 		dev_info.pQueueCreateInfos = queue_info;
 
-		VkResult res = vkCreateDevice(_physicalDevice, &dev_info, nullptr, &_device);
+		VkResult res = vkCreateDevice(*_physicalDevice, &dev_info, nullptr, &_device);
+		if (res != VkResult::VK_SUCCESS)
+			throw "";
+
+		VkPipelineCacheCreateInfo cache_info;
+		cache_info.sType = VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO;
+		cache_info.pNext = nullptr;
+		cache_info.flags = 0;
+		cache_info.initialDataSize = 0;
+		cache_info.pInitialData = nullptr;
+
+		res = vkCreatePipelineCache(_device, &cache_info, nullptr, &_pipelineCache);
 		if (res != VkResult::VK_SUCCESS)
 			throw "";
 	}
 
 	Context::~Context()
 	{
+		// Cleanup the allocated data
+		vkDestroyPipelineCache(_device, _pipelineCache, nullptr);
 		vkDestroyDevice(_device, nullptr);
 	}
 

@@ -142,12 +142,23 @@ int main(int argc, char* argv[])
 	desc.PreTransform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 
 	setup_buffer.begin();
-	SwapChain swapchain{ *context, setup_buffer, desc };
+	SwapChain swapchain{ context.get(), setup_buffer, desc };
+	Backbuffer framebuffer{ &swapchain, setup_buffer, 1280, 720, VK_FORMAT_D32_SFLOAT_S8_UINT };
 	setup_buffer.end();
 	queue.submit(setup_buffer);
 	queue.waitIdle();
 	
 	// End: Setup surface and swap-chain
+
+	// Begin: Scene setup
+
+	// Create a render pass
+
+	// Create a descriptor-set and pipeline layout
+
+	// Create the pipeline state
+
+	// End: Scene setup
 
 	// Enter the event-loop
 	while (!glfwWindowShouldClose(window))

@@ -109,7 +109,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 	{
 	public:
 		//! Constructor
-		SwapChain(VkDevice context, VkCommandBuffer cmd_buffer, const SwapChainDescription& desc);
+		SwapChain(Context* context, VkCommandBuffer cmd_buffer, const SwapChainDescription& desc);
 
 		//! Destructor
 		~SwapChain();
@@ -119,7 +119,15 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		{
 			return _swapchain;
 		}
-		
+
+		Context* context() const { return _context; }
+
+	public:
+		//! Number of images in the swap-chain
+		uint32_t nrImages() const { return _desc.NumberOfImages; }
+
+		VkImageView view(uint32_t idx) const { return _views[idx]; }
+
 	public:
 		//! Aquire the next image of the swap-chain
 		VkResult acquireNextImage(VkSemaphore presentCompleteSemaphore, uint32_t* currentBuffer);
@@ -133,7 +141,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 
 	private:
 		//! Owner device
-		VkDevice _context{ nullptr };
+		Context* _context{ nullptr };
 
 		//! Description
 		SwapChainDescription _desc;
@@ -153,6 +161,39 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		PFN_vkGetSwapchainImagesKHR vkGetSwapchainImagesKHR{ nullptr };
 		PFN_vkAcquireNextImageKHR vkAcquireNextImageKHR{ nullptr };
 		PFN_vkQueuePresentKHR vkQueuePresentKHR{ nullptr };
+	};
+
+	class Backbuffer final
+	{
+	public:
+		Backbuffer(SwapChain* swapchain, VkCommandBuffer cmd_buffer, uint32_t width, uint32_t height, VkFormat depth_format);
+		~Backbuffer();
+
+	private:
+		void createDefaultRenderPass(VkFormat color_format, VkFormat depth_format);
+		void createFramebuffers(uint32_t width, uint32_t height);
+		void createDepthBuffer(VkCommandBuffer cmd_buffer, uint32_t width, uint32_t height, VkFormat depth_format);
+
+	private:
+		//! Owner
+		SwapChain* _swapchain{ nullptr };
+
+	private:
+		//! Default render pass
+		VkRenderPass _renderPass{ nullptr };
+
+		//! Framebuffers
+		std::vector<VkFramebuffer> _framebuffers;
+		
+	private: // Depth buffer
+		//! Depth buffer memory
+		VkDeviceMemory _depthBufferMemory;
+
+		//! Depth buffer image
+		VkImage _depthBufferImage;
+
+		//! Depth buffer image view
+		VkImageView _depthBufferView;
 	};
 
 }}}

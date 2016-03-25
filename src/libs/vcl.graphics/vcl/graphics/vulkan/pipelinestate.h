@@ -38,45 +38,47 @@
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	class Device;
-
-	struct ContextQueueInfo
-	{
-		//! Index of the vulkan queue family
-		uint32_t FamilyIndex;
-	};
-	
-	class Context final
+	class PipelineLayout final
 	{
 	public:
 		//! Constructor
-		Context(Device* dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
+		PipelineLayout();
 
 		//! Destructor
-		~Context();
+		~PipelineLayout();
 
 		//! Convert to Vulkan ID
-		inline operator VkDevice() const
+		inline operator VkPipelineLayout() const
 		{
-			return _device;
+			return _layout;
 		}
 
-		Device* device() const { return _physicalDevice; }
-		VkPipelineCache cache() const { return _pipelineCache; }
+	public:
+
+	private:
+		//! Vulkan pipeline layout
+		VkPipelineLayout _layout;
+	};
+
+	class PipelineState final
+	{
+	public:
+		//! Constructor
+		PipelineState();
+
+		//! Destructor
+		~PipelineState();
+
+		//! Convert to Vulkan ID
+		inline operator VkPipelineState() const
+		{
+			return _state;
+		}
 
 	public:
-		VkQueue queue(uint32_t idx);
 		
 	private:
-		//! Vulkan phyiscal device
-		Device* _physicalDevice{ nullptr };
-
-		//! Vulkan device
-		VkDevice _device{ nullptr };
-
-		//! Queue families
-
-		//! Associated pipeline cache
-		VkPipelineCache _pipelineCache;
+		//! Vulkan pipeline state
+		VkPipelineState _state;
 	};
 }}}

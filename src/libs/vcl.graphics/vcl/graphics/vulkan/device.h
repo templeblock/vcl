@@ -64,8 +64,11 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		//! \returns the name of this device
 		const std::string& name() const { return _name; }
 		
-		//! \returns the number of available heaps
-		//std::vector
+		//! \returns the available memory types
+		gsl::span<const VkMemoryType> memoryTypes() const;
+
+	public:
+		uint32_t getMemoryTypeIndex(uint32_t typeBits, VkFlags properties);
 
 	private:
 		static void enumerateLayersAndExtensions
