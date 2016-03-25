@@ -78,7 +78,28 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		// Enable additional extensions
 		std::vector<const char*> req_ext(std::begin(extensions), std::end(extensions));
 
-		return std::make_unique<Context>(_device, req_layers, req_ext);
+		return std::make_unique<Context>(this, req_layers, req_ext);
+	}
+
+	gsl::span<const VkMemoryType> Device::memoryTypes() const
+	{
+		return{ _memory.memoryTypes, _memory.memoryTypeCount };
+	}
+
+	uint32_t Device::getMemoryTypeIndex(uint32_t typeBits, VkFlags properties)
+	{
+		for (uint32_t i = 0; i < 32; i++)
+		{
+			if ((typeBits & 1) == 1)
+			{
+				if ((_memory.memoryTypes[i].propertyFlags & properties) == properties)
+				{
+					return i;
+				}
+			}
+			typeBits >>= 1;
+		}
+		return 0xffffffff;
 	}
 
 	void Device::enumerateLayersAndExtensions

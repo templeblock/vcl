@@ -32,8 +32,6 @@
 // Vulkan
 #include <vulkan/vulkan.h>
 
-// VCL
-
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
 	// Taken from https://github.com/SaschaWillems/Vulkan/blob/master/base/vulkantools.cpp

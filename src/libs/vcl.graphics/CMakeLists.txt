@@ -117,6 +117,7 @@ SET(VCL_GRAPHICS_VULKAN_INC
 	vcl/graphics/vulkan/commands.h
 	vcl/graphics/vulkan/context.h
 	vcl/graphics/vulkan/device.h
+	vcl/graphics/vulkan/pipelinestate.h
 	vcl/graphics/vulkan/platform.h
 	vcl/graphics/vulkan/swapchain.h
 	vcl/graphics/vulkan/tools.h
@@ -125,6 +126,7 @@ SET(VCL_GRAPHICS_VULKAN_SRC
 	vcl/graphics/vulkan/commands.cpp
 	vcl/graphics/vulkan/context.cpp
 	vcl/graphics/vulkan/device.cpp
+	vcl/graphics/vulkan/pipelinestate.cpp
 	vcl/graphics/vulkan/platform.cpp
 	vcl/graphics/vulkan/swapchain.cpp
 )

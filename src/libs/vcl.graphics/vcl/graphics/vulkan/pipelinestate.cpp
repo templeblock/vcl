@@ -22,61 +22,15 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#pragma once
-
-// VCL configuration
-#include <vcl/config/global.h>
+#include <vcl/graphics/vulkan/pipelinestate.h>
 
 // C++ standard library
-#include <string>
+#include <iostream>
+#include <vector>
 
-// Vulkan
-#include <vulkan/vulkan.h>
-
-// GSL
-#include <vcl/core/3rdparty/gsl/span.h>
+// VCL
+#include <vcl/core/contract.h>
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	class Device;
-
-	struct ContextQueueInfo
-	{
-		//! Index of the vulkan queue family
-		uint32_t FamilyIndex;
-	};
-	
-	class Context final
-	{
-	public:
-		//! Constructor
-		Context(Device* dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
-
-		//! Destructor
-		~Context();
-
-		//! Convert to Vulkan ID
-		inline operator VkDevice() const
-		{
-			return _device;
-		}
-
-		Device* device() const { return _physicalDevice; }
-		VkPipelineCache cache() const { return _pipelineCache; }
-
-	public:
-		VkQueue queue(uint32_t idx);
-		
-	private:
-		//! Vulkan phyiscal device
-		Device* _physicalDevice{ nullptr };
-
-		//! Vulkan device
-		VkDevice _device{ nullptr };
-
-		//! Queue families
-
-		//! Associated pipeline cache
-		VkPipelineCache _pipelineCache;
-	};
 }}}
