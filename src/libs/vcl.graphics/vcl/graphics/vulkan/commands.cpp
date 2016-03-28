@@ -30,24 +30,24 @@
 
 // VCL
 #include <vcl/core/contract.h>
+#include <vcl/graphics/vulkan/context.h>
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	CommandPool::CommandPool(VkDevice device, uint32_t queue_family)
-	: _device(device)
+	Semaphore::Semaphore(Context* context)
+	: _context(context)
 	{
-		VkCommandPoolCreateInfo cmd_pool_info;
-		cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		cmd_pool_info.pNext = nullptr;
-		cmd_pool_info.queueFamilyIndex = queue_family;
-		cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		VkSemaphoreCreateInfo semaphoreCreateInfo = {};
+		semaphoreCreateInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
+		semaphoreCreateInfo.pNext = nullptr;
 
-		VkResult res = vkCreateCommandPool(device, &cmd_pool_info, nullptr, &_pool);
-		Check(res == VK_SUCCESS, "Command pool was created.");
+		VkResult res = vkCreateSemaphore(*_context, &semaphoreCreateInfo, nullptr, &_semaphore);
+		Check(res == VK_SUCCESS, "Semaphore was created.");
 	}
-	CommandPool::~CommandPool()
+
+	Semaphore::~Semaphore()
 	{
-		vkDestroyCommandPool(_device, _pool, nullptr);
+		vkDestroySemaphore(*_context, _semaphore, nullptr);
 	}
 
 	CommandBuffer::CommandBuffer(VkDevice device, VkCommandPool pool)
@@ -98,23 +98,36 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 
 	}
 
-	void CommandQueue::submit(const CommandBuffer& buffer)
+	void CommandQueue::submit
+	(
+		gsl::span<VkCommandBuffer> buffers,
+		VkPipelineStageFlags* flags,
+		gsl::span<VkSemaphore> waiting,
+		gsl::span<VkSemaphore> signaling
+	)
 	{
-		VkCommandBuffer cb = buffer;
-
 		VkSubmitInfo info;
 		info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
 		info.pNext = nullptr;
-		info.commandBufferCount = 1;
-		info.pCommandBuffers = &cb;
-		info.waitSemaphoreCount = 0;
-		info.pWaitSemaphores = nullptr;
-		info.pWaitDstStageMask = nullptr;
-		info.signalSemaphoreCount = 0;
-		info.pSignalSemaphores = nullptr;
+		info.commandBufferCount = uint32_t(buffers.size());
+		info.pCommandBuffers = buffers.data();
+		info.waitSemaphoreCount = uint32_t(waiting.size());
+		info.pWaitSemaphores = waiting.data();
+		info.pWaitDstStageMask = flags;
+		info.signalSemaphoreCount = uint32_t(signaling.size());
+		info.pSignalSemaphores = signaling.data();
 
 		VkResult res = vkQueueSubmit(_queue, 1, &info, VK_NULL_HANDLE);
 		Check(res == VK_SUCCESS, "Command buffer recording began.");
+	}
+
+	void CommandQueue::submit
+	(
+		const CommandBuffer& buffer
+	)
+	{
+		VkCommandBuffer buf = buffer;
+		submit({ buf });
 	}
 
 	void CommandQueue::waitIdle()

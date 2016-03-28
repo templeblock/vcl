@@ -126,6 +126,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		//! Number of images in the swap-chain
 		uint32_t nrImages() const { return _desc.NumberOfImages; }
 
+		VkImage image(uint32_t idx) const { return _images[idx]; }
 		VkImageView view(uint32_t idx) const { return _views[idx]; }
 
 	public:
@@ -136,7 +137,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		VkResult queuePresent(VkQueue queue, uint32_t currentBuffer);
 
 		//! Present the buffer to the queue
-		VkResult queuePresent(VkQueue queue, uint32_t currentBuffer, VkSemaphore waitSemaphore);
+		void queuePresent(VkQueue queue, uint32_t currentBuffer, VkSemaphore waitSemaphore);
 
 
 	private:
@@ -166,12 +167,18 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 	class Backbuffer final
 	{
 	public:
-		Backbuffer(SwapChain* swapchain, VkCommandBuffer cmd_buffer, uint32_t width, uint32_t height, VkFormat depth_format);
+		Backbuffer(SwapChain* swapchain, VkRenderPass pass, VkCommandBuffer cmd_buffer, uint32_t width, uint32_t height, VkFormat depth_format);
 		~Backbuffer();
 
+	public:
+		Context* context() const { return _swapchain->context(); }
+
+		SwapChain* swapChain() const { return _swapchain; }
+
+		VkFramebuffer framebuffer(uint32_t idx) { return _framebuffers[idx]; }
+
 	private:
-		void createDefaultRenderPass(VkFormat color_format, VkFormat depth_format);
-		void createFramebuffers(uint32_t width, uint32_t height);
+		void createFramebuffers(VkRenderPass pass, uint32_t width, uint32_t height);
 		void createDepthBuffer(VkCommandBuffer cmd_buffer, uint32_t width, uint32_t height, VkFormat depth_format);
 
 	private:
@@ -179,9 +186,6 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		SwapChain* _swapchain{ nullptr };
 
 	private:
-		//! Default render pass
-		VkRenderPass _renderPass{ nullptr };
-
 		//! Framebuffers
 		std::vector<VkFramebuffer> _framebuffers;
 		
