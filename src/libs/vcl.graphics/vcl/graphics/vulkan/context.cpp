@@ -82,11 +82,42 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		res = vkCreatePipelineCache(_device, &cache_info, nullptr, &_pipelineCache);
 		if (res != VkResult::VK_SUCCESS)
 			throw "";
+
+		// Allocate different command pools.
+		// For each queue family, we allocate three command pools:
+		// 1) For in-frequently reset buffers
+		// 2) For static command buffers that are never deleted or reset
+		// 3) For short-lived command buffers
+		_cmdPools.resize(1);
+
+		VkCommandPoolCreateInfo cmd_pool_info;
+		cmd_pool_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+		cmd_pool_info.pNext = nullptr;
+		cmd_pool_info.queueFamilyIndex = 0;
+
+		cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+		res = vkCreateCommandPool(_device, &cmd_pool_info, nullptr, &_cmdPools[0][int(CommandBufferType::Default)]);
+		Check(res == VK_SUCCESS, "Command pool was created.");
+
+		cmd_pool_info.flags = 0;
+		res = vkCreateCommandPool(_device, &cmd_pool_info, nullptr, &_cmdPools[0][int(CommandBufferType::Static)]);
+		Check(res == VK_SUCCESS, "Command pool was created.");
+
+		cmd_pool_info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT | VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+		res = vkCreateCommandPool(_device, &cmd_pool_info, nullptr, &_cmdPools[0][int(CommandBufferType::Transient)]);
+		Check(res == VK_SUCCESS, "Command pool was created.");
 	}
 
 	Context::~Context()
 	{
 		// Cleanup the allocated data
+		for (const auto& pools : _cmdPools)
+		{
+			vkDestroyCommandPool(_device, pools[0], nullptr);
+			vkDestroyCommandPool(_device, pools[1], nullptr);
+			vkDestroyCommandPool(_device, pools[2], nullptr);
+		}
+
 		vkDestroyPipelineCache(_device, _pipelineCache, nullptr);
 		vkDestroyDevice(_device, nullptr);
 	}
@@ -97,5 +128,10 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		vkGetDeviceQueue(_device, 0, idx, &q);
 
 		return q;
+	}
+
+	VkCommandPool Context::commandPool(uint32_t queueIdx, CommandBufferType type)
+	{
+		return _cmdPools[queueIdx][int(CommandBufferType::Transient)];
 	}
 }}}
