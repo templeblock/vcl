@@ -19,6 +19,11 @@ IF(GLEW_FOUND AND VCL_OPENGL_SUPPORT)
 	SUBDIRS(vcl.graphics.opengl)
 ENDIF()
 
+# Vulkan related tests
+IF(VCL_VULKAN_SUPPORT)
+	SUBDIRS(vcl.graphics.vulkan)
+ENDIF()
+
 # OpenCL related tests
 IF(OPENCL_FOUND AND VCL_OPENCL_SUPPORT)
 	SUBDIRS(vcl.compute.opencl)

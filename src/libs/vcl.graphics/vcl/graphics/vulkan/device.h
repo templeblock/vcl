@@ -47,8 +47,18 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		//! Constructor
 		Device(VkPhysicalDevice dev);
 
+		// Remove move and copy constructors
+		Device(const Device&) = delete;
+
+		//! Default move ctor allows to create temporary objects
+		Device(Device&&) = default;
+
 		//! Destructor
 		~Device() = default;
+
+		// Remove move and copy assignment operators
+		Device& operator=(const Device&) = delete;
+		Device& operator=(Device&&) = delete;
 
 		//! Convert to Vulkan ID
 		inline operator VkPhysicalDevice() const

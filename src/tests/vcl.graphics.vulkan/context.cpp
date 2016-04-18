@@ -2,7 +2,7 @@
  * This file is part of the Visual Computing Library (VCL) release under the
  * MIT license.
  *
- * Copyright (c) 2016 Basil Fierz
+ * Copyright (c) 2014-2016 Basil Fierz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,75 +22,58 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
-#pragma once
 
 // VCL configuration
 #include <vcl/config/global.h>
 
-// C++ standard library
-#include <array>
-#include <string>
-#include <vector>
+// C++ Standard Library
 
-// Vulkan
+// Vulkan API
 #include <vulkan/vulkan.h>
 
-// GSL
-#include <vcl/core/3rdparty/gsl/span.h>
+// Include the relevant parts from the library
+#include <vcl/graphics/vulkan/context.h>
+#include <vcl/graphics/vulkan/device.h>
+#include <vcl/graphics/vulkan/platform.h>
 
-namespace Vcl { namespace Graphics { namespace Vulkan
+// Google test
+#include <gtest/gtest.h>
+
+// Tests the vulkan initialization
+TEST(Vulkan, InitPlatformNoExtensions)
 {
-	class Device;
+	using namespace Vcl::Graphics::Vulkan;
 
-	struct ContextQueueInfo
+	// Initialize the Vulkan platform
+	auto platform = std::make_unique<Platform>();
+	VkInstance inst = *platform;
+
+	// Verify the result
+	EXPECT_TRUE(inst != nullptr) << "Platform not created.";
+
+	for (int i = 0; i < platform->nrDevices(); i++)
 	{
-		//! Index of the vulkan queue family
-		uint32_t FamilyIndex;
-	};
+		auto& dev = platform->device(i);
 
-	enum class CommandBufferType
+		EXPECT_FALSE(dev.name().empty()) << "Physical device name is not valid.";
+	}
+}
+
+// Tests the vulkan initialization
+TEST(Vulkan, InitDevicesForAllPhysicalDevicesWithoutExtensions)
+{
+	using namespace Vcl::Graphics::Vulkan;
+
+	// Initialize the Vulkan platform
+	auto platform = std::make_unique<Platform>();
+
+	// Create a context for each device
+	for (int i = 0; i < platform->nrDevices(); i++)
 	{
-		Default = 0,
-		Static = 1,
-		Transient = 2
-	};
-	
-	class Context final
-	{
-	public:
-		//! Constructor
-		Context(Device* dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
+		auto& dev = platform->device(i);
+		auto ctx = dev.createContext();
+		VkDevice ptr = *ctx;
 
-		//! Destructor
-		~Context();
-
-		//! Convert to Vulkan ID
-		inline operator VkDevice() const
-		{
-			return _device;
-		}
-
-		Device* device() const { return _physicalDevice; }
-		VkPipelineCache cache() const { return _pipelineCache; }
-
-		VkCommandPool commandPool(uint32_t queueIdx, CommandBufferType type);
-
-	public:
-		VkQueue queue(uint32_t idx);
-		
-	private:
-		//! Vulkan physical device
-		Device* _physicalDevice{ nullptr };
-
-		//! Vulkan device
-		VkDevice _device{ nullptr };
-
-		//! Queue families
-
-		//! Associated pipeline cache
-		VkPipelineCache _pipelineCache;
-
-		//! Pre-allocated command pools
-		std::vector<std::array<VkCommandPool, 3>> _cmdPools;
-	};
-}}}
+		EXPECT_TRUE(ptr != nullptr) << "Vulkan device is not created.";
+	}
+}

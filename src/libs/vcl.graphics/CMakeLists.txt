@@ -72,9 +72,11 @@ SET(VCL_GRAPHICS_RUNTIME_OPENGL_SRC
 
 # VCL / GRAPHICS / RUNTIME / VULKAN / RESOURCE
 SET(VCL_GRAPHICS_RUNTIME_VULKAN_RESOURCE_INC
+	vcl/graphics/runtime/vulkan/resource/buffer.h
 	vcl/graphics/runtime/vulkan/resource/shader.h
 )
 SET(VCL_GRAPHICS_RUNTIME_VULKAN_RESOURCE_SRC
+	vcl/graphics/runtime/vulkan/resource/buffer.cpp
 	vcl/graphics/runtime/vulkan/resource/shader.cpp
 )
 
@@ -125,6 +127,7 @@ SET(VCL_GRAPHICS_VULKAN_INC
 	vcl/graphics/vulkan/commands.h
 	vcl/graphics/vulkan/context.h
 	vcl/graphics/vulkan/device.h
+	vcl/graphics/vulkan/memory.h
 	vcl/graphics/vulkan/pipelinestate.h
 	vcl/graphics/vulkan/platform.h
 	vcl/graphics/vulkan/swapchain.h
@@ -134,6 +137,7 @@ SET(VCL_GRAPHICS_VULKAN_SRC
 	vcl/graphics/vulkan/commands.cpp
 	vcl/graphics/vulkan/context.cpp
 	vcl/graphics/vulkan/device.cpp
+	vcl/graphics/vulkan/memory.cpp
 	vcl/graphics/vulkan/pipelinestate.cpp
 	vcl/graphics/vulkan/platform.cpp
 	vcl/graphics/vulkan/swapchain.cpp
