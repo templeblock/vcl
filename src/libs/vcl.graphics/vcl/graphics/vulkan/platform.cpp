@@ -230,7 +230,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		return static_cast<int>(_devices.size());
 	}
 
-	const Device& Platform::device(int idx) const
+	Device& Platform::device(int idx)
 	{
 		Require(idx < _devices.size(), "idx is valid.");
 

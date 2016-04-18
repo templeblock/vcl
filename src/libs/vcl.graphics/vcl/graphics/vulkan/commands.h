@@ -76,6 +76,24 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		void begin();
 		void end();
 
+		//! Begin a render pass
+		void beginRenderPass(const VkRenderPassBeginInfo* pass_info);
+
+		//! End the current render pass
+		void endRenderPass();
+
+		//! Prepare a framebuffer for presentation
+		void prepareForPresent(VkImage img);
+
+		//! Transition an image from presentation to color attachment
+		void returnFromPresent(VkImage img);
+
+		//! Set scissor rect
+		void setScissor(uint32_t first, gsl::span<VkRect2D> rects);
+
+		//! Set viewport
+		void setViewport(uint32_t first, gsl::span<VkViewport> viewports);
+
 	private:
 		VkDevice _device;
 		VkCommandPool _pool;

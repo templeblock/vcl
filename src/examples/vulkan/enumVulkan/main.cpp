@@ -37,6 +37,7 @@
 #include <GLFW/glfw3.h>
 
 // VCL
+#include <vcl/graphics/runtime/vulkan/resource/buffer.h>
 #include <vcl/graphics/runtime/vulkan/resource/shader.h>
 #include <vcl/graphics/vulkan/commands.h>
 #include <vcl/graphics/vulkan/pipelinestate.h>
@@ -68,22 +69,13 @@ char *readBinaryFile(const char *filename, size_t *psize)
 	return (char*)shader_code;
 }
 
-void buildCommandBuffers(Vcl::Graphics::Vulkan::Backbuffer* bb, VkCommandPool cmdPool, VkRenderPass renderPass, uint32_t width, uint32_t height, std::vector<VkCommandBuffer>& drawCmdBuffers)
+void buildCommandBuffers(Vcl::Graphics::Vulkan::Backbuffer* bb, VkCommandPool cmdPool, VkRenderPass renderPass, uint32_t width, uint32_t height, std::vector<Vcl::Graphics::Vulkan::CommandBuffer>& drawCmdBuffers)
 {
-	drawCmdBuffers.resize(bb->swapChain()->nrImages());
-
-	VkCommandBufferAllocateInfo commandBufferAllocateInfo = {};
-	commandBufferAllocateInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-	commandBufferAllocateInfo.commandPool = cmdPool;
-	commandBufferAllocateInfo.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-	commandBufferAllocateInfo.commandBufferCount = (uint32_t)drawCmdBuffers.size();
-
-	VkResult vkRes = vkAllocateCommandBuffers(*bb->context(), &commandBufferAllocateInfo, drawCmdBuffers.data());
-	assert(!vkRes);
-
-	VkCommandBufferBeginInfo cmdBufInfo = {};
-	cmdBufInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-	cmdBufInfo.pNext = NULL;
+	drawCmdBuffers.reserve(bb->swapChain()->nrImages());
+	for (int i = 0; i < bb->swapChain()->nrImages(); i++)
+	{
+		drawCmdBuffers.emplace_back(*bb->context(), cmdPool);
+	}
 
 	VkClearValue clearValues[2];
 	clearValues[0].color = { 1.0f, 0.0f, 1.0f, 1.0f };
@@ -93,10 +85,10 @@ void buildCommandBuffers(Vcl::Graphics::Vulkan::Backbuffer* bb, VkCommandPool cm
 	renderPassBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassBeginInfo.pNext = NULL;
 	renderPassBeginInfo.renderPass = renderPass;
-	renderPassBeginInfo.renderArea.offset.x = 0;
-	renderPassBeginInfo.renderArea.offset.y = 0;
-	renderPassBeginInfo.renderArea.extent.width = width;
-	renderPassBeginInfo.renderArea.extent.height = height;
+	renderPassBeginInfo.renderArea.offset.x = width / 4;
+	renderPassBeginInfo.renderArea.offset.y = height / 4;
+	renderPassBeginInfo.renderArea.extent.width = width / 2;
+	renderPassBeginInfo.renderArea.extent.height = height / 2;
 	renderPassBeginInfo.clearValueCount = 2;
 	renderPassBeginInfo.pClearValues = clearValues;
 
@@ -107,10 +99,8 @@ void buildCommandBuffers(Vcl::Graphics::Vulkan::Backbuffer* bb, VkCommandPool cm
 		// Set target frame buffer
 		renderPassBeginInfo.framebuffer = bb->framebuffer(i);
 
-		err = vkBeginCommandBuffer(drawCmdBuffers[i], &cmdBufInfo);
-		assert(!err);
-
-		vkCmdBeginRenderPass(drawCmdBuffers[i], &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+		drawCmdBuffers[i].begin();
+		drawCmdBuffers[i].beginRenderPass(&renderPassBeginInfo);
 
 		// Update dynamic viewport state
 		VkViewport viewport = {};
@@ -120,7 +110,7 @@ void buildCommandBuffers(Vcl::Graphics::Vulkan::Backbuffer* bb, VkCommandPool cm
 		viewport.width = (float)width / 2;
 		viewport.minDepth = (float) 0.0f;
 		viewport.maxDepth = (float) 1.0f;
-		vkCmdSetViewport(drawCmdBuffers[i], 0, 1, &viewport);
+		drawCmdBuffers[i].setViewport(0, viewport);
 
 		// Update dynamic scissor state
 		VkRect2D scissor = {};
@@ -128,7 +118,7 @@ void buildCommandBuffers(Vcl::Graphics::Vulkan::Backbuffer* bb, VkCommandPool cm
 		scissor.extent.height = height / 2;
 		scissor.offset.x = width / 4;
 		scissor.offset.y = height / 4;
-		vkCmdSetScissor(drawCmdBuffers[i], 0, 1, &scissor);
+		drawCmdBuffers[i].setScissor(0, scissor);
 
 		//// Bind descriptor sets describing shader binding points
 		//vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
@@ -146,37 +136,13 @@ void buildCommandBuffers(Vcl::Graphics::Vulkan::Backbuffer* bb, VkCommandPool cm
 		//// Draw indexed triangle
 		//vkCmdDrawIndexed(drawCmdBuffers[i], indices.count, 1, 0, 0, 1);
 
-		vkCmdEndRenderPass(drawCmdBuffers[i]);
+		drawCmdBuffers[i].endRenderPass();
 
-		// Add a present memory barrier to the end of the command buffer
-		// This will transform the frame buffer color attachment to a
-		// new layout for presenting it to the windowing system integration 
-		VkImageMemoryBarrier prePresentBarrier = {};
-		prePresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		prePresentBarrier.pNext = NULL;
-		prePresentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		prePresentBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
-		prePresentBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		prePresentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		prePresentBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		prePresentBarrier.image = bb->swapChain()->image(i);
+		// Preparing the frame buffer for presentation
+		drawCmdBuffers[i].prepareForPresent(bb->swapChain()->image(i));
 
-		VkImageMemoryBarrier *pMemoryBarrier = &prePresentBarrier;
-		vkCmdPipelineBarrier
-		(
-			drawCmdBuffers[i],
-			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &prePresentBarrier
-		);
-
-		err = vkEndCommandBuffer(drawCmdBuffers[i]);
-		assert(!err);
+		// Finalizing the command buffer
+		drawCmdBuffers[i].end();
 	}
 }
 
@@ -248,7 +214,7 @@ int main(int argc, char* argv[])
 
 	// Initialize the Vulkan platform
 	auto platform = std::make_unique<Platform>(glfw.vulkanExtensions());
-	auto device = platform->device(0);
+	auto& device = platform->device(0);
 	auto context = device.createContext(context_extensions);
 	CommandQueue queue{ context->queue(0) };
 	CommandBuffer setup_buffer{ *context, context->commandPool(0, CommandBufferType::Default) };
@@ -294,6 +260,18 @@ int main(int argc, char* argv[])
 
 	// Begin: Scene setup
 
+	// Setup buffers
+	Vcl::Graphics::Runtime::BufferDescription staging_buffer_desc;
+	staging_buffer_desc.CPUAccess = Vcl::Graphics::Runtime::CPUAccess::Write | Vcl::Graphics::Runtime::CPUAccess::Read;
+	staging_buffer_desc.SizeInBytes = 4096;
+	staging_buffer_desc.Usage = Vcl::Graphics::Runtime::Usage::Staging;
+	Vcl::Graphics::Runtime::Vulkan::Buffer staging_buffer
+	{
+		context.get(), staging_buffer_desc, Vcl::Graphics::Runtime::Vulkan::BufferUsage::TransferSource
+	};
+	void* mapped_ptr = staging_buffer.memory()->map(0, 4096);
+	staging_buffer.memory()->unmap();
+
 	// Descriptor set
 	DescriptorSetLayout descriptor_set_layout = 
 	{
@@ -331,7 +309,7 @@ int main(int argc, char* argv[])
 	PipelineState state{ context.get(), &layout, render_pass, pipeline_desc };
 
 	// Build command buffers
-	std::vector<VkCommandBuffer> cmds;
+	std::vector<Vcl::Graphics::Vulkan::CommandBuffer> cmds;
 	buildCommandBuffers(&framebuffer, context->commandPool(0, CommandBufferType::Default), render_pass, 1280, 720, cmds);
 
 	// End: Scene setup
@@ -348,34 +326,10 @@ int main(int argc, char* argv[])
 		// Render the scene
 		uint32_t curr_buf;
 		swapchain.acquireNextImage(presentComplete, &curr_buf);
-		// Add a post present image memory barrier
-		// This will transform the frame buffer color attachment back
-		// to it's initial layout after it has been presented to the
-		// windowing system
-		VkImageMemoryBarrier postPresentBarrier = {};
-		postPresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-		postPresentBarrier.pNext = NULL;
-		postPresentBarrier.srcAccessMask = 0;
-		postPresentBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-		postPresentBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-		postPresentBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-		postPresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		postPresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-		postPresentBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
-		postPresentBarrier.image = framebuffer.swapChain()->image(curr_buf);
-
+		
 		// Put post present barrier into command buffer
 		post_present.begin();
-		vkCmdPipelineBarrier
-		(
-			post_present,
-			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
-			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-			0,
-			0, nullptr,
-			0, nullptr,
-			1, &postPresentBarrier
-		);
+		post_present.returnFromPresent(framebuffer.swapChain()->image(curr_buf));
 		post_present.end();
 
 		// Submit to the queue
@@ -386,7 +340,8 @@ int main(int argc, char* argv[])
 		VkPipelineStageFlags pipelineStages = VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT;
 		VkSemaphore s0 = presentComplete;
 		VkSemaphore s1 = renderComplete;
-		queue.submit({ cmds[curr_buf] }, &pipelineStages, { s0 }, { s1 });
+		VkCommandBuffer b0 = cmds[curr_buf];
+		queue.submit({ b0 }, &pipelineStages, { s0 }, { s1 });
 
 		// Present the current buffer to the swap chain
 		// We pass the signal semaphore from the submit info

@@ -28,8 +28,7 @@
 #include <vcl/config/global.h>
 
 // C++ standard library
-#include <map>
-#include <memory>
+#include <array>
 #include <string>
 #include <vector>
 
@@ -37,67 +36,48 @@
 #include <vulkan/vulkan.h>
 
 // VCL
-#include <vcl/graphics/vulkan/device.h>
+#include <vcl/graphics/vulkan/context.h>
 
 namespace Vcl { namespace Graphics { namespace Vulkan
-{
-	struct PlatformDesc
-	{
-		const char* ApplicationName;
-
-		uint32_t NrLayers;
-		const char** Layers;
-
-		uint32_t NrExtensions;
-		const char** Extensions;
-	};
-
-	class Platform final
+{	
+	class Memory final
 	{
 	public:
-		Platform(gsl::span<const char*> extensions = {});
-		~Platform();
+		//! Constructor
+		Memory(Context* ctx, size_t size, int heapIndex);
+		Memory(Context* ctx, size_t size, VkMemoryPropertyFlags flags);
+
+		//! Destructor
+		~Memory();
 
 		//! Convert to Vulkan ID
-		inline operator VkInstance() const
+		inline operator VkDeviceMemory() const
 		{
-			return _instance;
+			return _memory;
 		}
 
-	public: // Query layers
-		static const std::vector<VkLayerProperties>& availableLayers() { return _availableLayers; }
-		static const std::vector<VkExtensionProperties>& availableExtensions() { return _availableExtensions; }
+		//! Access the pointer to the context object
+		Context* context() const { return _context; }
 
 	public:
-		int nrDevices() const;
-		Device& device(int idx);
+		//! \returns the size in bytes
+		size_t sizeInBytes() const { return _sizeInBytes; }
 
+	public:
+		void* map(size_t offset, size_t length);
+		void unmap();
+		
 	private:
-		//! Vulkan instance pointer
-		VkInstance _instance{ nullptr };
+		//! Vulkan device
+		Context* _context{ nullptr };
 
-		//! List of available vulkan devices
-		std::vector<Device> _devices;
+		//! Vulkan physical memory
+		VkDeviceMemory _memory{ nullptr };
 
-		//! Debug callback of this platform instance
-		VkDebugReportCallbackEXT _debugCallback;
+		//! Size of the memory region
+		size_t _sizeInBytes{ 0 };
 
-	private: // Debug extension callbacks
-		PFN_vkCreateDebugReportCallbackEXT vkCreateDebugReportCallbackEXT;
-		PFN_vkDebugReportMessageEXT vkDebugReportMessageEXT;
-		PFN_vkDestroyDebugReportCallbackEXT vkDestroyDebugReportCallbackEXT;
-
-	private:
-		//! Indicate if the layers were loaded
-		static bool _platformInitialized;
-
-		//! Available extensions
-		static std::vector<VkLayerProperties> _availableLayers;
-
-		//! Available instance extensions
-		static std::vector<VkExtensionProperties> _availableExtensions;
-
-		//! Extensions for each layer
-		static std::multimap<std::string, std::string> _extensionsPerLayer;
+		//! Memory configuration
+		VkMemoryPropertyFlags _memoryFlags{ 0 };
 	};
 }}}

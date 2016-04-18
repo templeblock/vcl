@@ -87,6 +87,87 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		Check(res == VK_SUCCESS, "Command buffer recording ended.");
 	}
 
+	void CommandBuffer::beginRenderPass(const VkRenderPassBeginInfo* pass_info)
+	{
+		vkCmdBeginRenderPass(_cmdBuffer, pass_info, VK_SUBPASS_CONTENTS_INLINE);
+	}
+
+	void CommandBuffer::endRenderPass()
+	{
+		vkCmdEndRenderPass(_cmdBuffer);
+	}
+
+	void CommandBuffer::prepareForPresent(VkImage img)
+	{
+		// Add a present memory barrier to the end of the command buffer
+		// This will transform the frame buffer color attachment to a
+		// new layout for presenting it to the windowing system integration 
+		VkImageMemoryBarrier prePresentBarrier;
+		prePresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		prePresentBarrier.pNext = nullptr;
+		prePresentBarrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		prePresentBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
+		prePresentBarrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		prePresentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		prePresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		prePresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		prePresentBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		prePresentBarrier.image = img;
+
+		VkImageMemoryBarrier *pMemoryBarrier = &prePresentBarrier;
+		vkCmdPipelineBarrier
+		(
+			_cmdBuffer,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &prePresentBarrier
+		);
+	}
+
+	void CommandBuffer::returnFromPresent(VkImage img)
+	{
+		// Add a post present image memory barrier
+		// This will transform the frame buffer color attachment back
+		// to it's initial layout after it has been presented to the
+		// windowing system
+		VkImageMemoryBarrier postPresentBarrier;
+		postPresentBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+		postPresentBarrier.pNext = nullptr;
+		postPresentBarrier.srcAccessMask = 0;
+		postPresentBarrier.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+		postPresentBarrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+		postPresentBarrier.newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+		postPresentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		postPresentBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+		postPresentBarrier.subresourceRange = { VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1 };
+		postPresentBarrier.image = img;
+
+		// Put post present barrier into command buffer
+		vkCmdPipelineBarrier
+		(
+			_cmdBuffer,
+			VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+			VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+			0,
+			0, nullptr,
+			0, nullptr,
+			1, &postPresentBarrier
+		);
+	}
+
+	void CommandBuffer::setScissor(uint32_t first, gsl::span<VkRect2D> rects)
+	{
+		vkCmdSetScissor(_cmdBuffer, first, rects.size(), rects.data());
+	}
+
+	void CommandBuffer::setViewport(uint32_t first, gsl::span<VkViewport> viewports)
+	{
+		vkCmdSetViewport(_cmdBuffer, first, viewports.size(), viewports.data());
+	}
+
 	CommandQueue::CommandQueue(VkQueue queue)
 	: _queue(queue)
 	{
