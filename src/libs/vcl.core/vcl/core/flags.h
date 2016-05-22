@@ -26,7 +26,6 @@
 
 // VCL configuration
 #include <vcl/config/global.h>
-#include <vcl/config/eigen.h>
 
 // VCL
 #include <vcl/core/preprocessor.h>
