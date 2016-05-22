@@ -34,7 +34,7 @@
 #include <vulkan/vulkan.h>
 
 // GSL
-#include <vcl/core/3rdparty/gsl/span.h>
+#include <span.h>
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
@@ -60,25 +60,25 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		VkPipelineLayout _layout;
 	};
 
-	class PipelineState final
-	{
-	public:
-		//! Constructor
-		PipelineState();
-
-		//! Destructor
-		~PipelineState();
-
-		//! Convert to Vulkan ID
-		inline operator VkPipelineState() const
-		{
-			return _state;
-		}
-
-	public:
-		
-	private:
-		//! Vulkan pipeline state
-		VkPipelineState _state;
-	};
+	//class PipelineState final
+	//{
+	//public:
+	//	//! Constructor
+	//	PipelineState();
+	//
+	//	//! Destructor
+	//	~PipelineState();
+	//
+	//	//! Convert to Vulkan ID
+	//	inline operator VkPipelineState() const
+	//	{
+	//		return _state;
+	//	}
+	//
+	//public:
+	//	
+	//private:
+	//	//! Vulkan pipeline state
+	//	VkPipelineState _state;
+	//};
 }}}
