@@ -2,7 +2,7 @@
  * This file is part of the Visual Computing Library (VCL) release under the
  * MIT license.
  *
- * Copyright (c) 2016 Basil Fierz
+ * Copyright (c) 2014-2016 Basil Fierz
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,70 +27,32 @@
 // VCL configuration
 #include <vcl/config/global.h>
 
-// C++ standard library
-#include <array>
-#include <string>
-#include <vector>
+#ifdef VCL_VULKAN_SUPPORT
 
 // Vulkan
 #include <vulkan/vulkan.h>
 
-// GSL
-#include <span.h>
+// VCL
+#include <vcl/graphics/runtime/resource/shader.h>
 
-namespace Vcl { namespace Graphics { namespace Vulkan
+namespace Vcl { namespace Graphics { namespace Runtime { namespace Vulkan
 {
-	class Device;
-
-	struct ContextQueueInfo
-	{
-		//! Index of the vulkan queue family
-		uint32_t FamilyIndex;
-	};
-
-	enum class CommandBufferType
-	{
-		Default = 0,
-		Static = 1,
-		Transient = 2
-	};
-	
-	class Context final
+	class Shader : public Runtime::Shader
 	{
 	public:
-		//! Constructor
-		Context(Device* dev, gsl::span<const char*> layers, gsl::span<const char*> extensions);
-
-		//! Destructor
-		~Context();
-
-		//! Convert to Vulkan ID
-		inline operator VkDevice() const
-		{
-			return _device;
-		}
-
-		Device* device() const { return _physicalDevice; }
-		VkPipelineCache cache() const { return _pipelineCache; }
-
-		VkCommandPool commandPool(uint32_t queueIdx, CommandBufferType type);
+		Shader(VkDevice device, ShaderType type, int tag, const char* source, size_t size);
+		Shader(Shader&& rhs);
+		virtual ~Shader();
 
 	public:
-		VkQueue queue(uint32_t idx);
+		VkPipelineShaderStageCreateInfo getCreateInfo() const;
+
+	public:
+		static VkShaderStageFlagBits convert(ShaderType type);
 		
 	private:
-		//! Vulkan phyiscal device
-		Device* _physicalDevice{ nullptr };
-
-		//! Vulkan device
-		VkDevice _device{ nullptr };
-
-		//! Queue families
-
-		//! Associated pipeline cache
-		VkPipelineCache _pipelineCache;
-
-		//! Pre-allocated command pools
-		std::vector<std::array<VkCommandPool, 3>> _cmdPools;
+		VkDevice _device;
+		VkShaderModule _shaderModule;
 	};
-}}}
+}}}}
+#endif // VCL_VULKAN_SUPPORT

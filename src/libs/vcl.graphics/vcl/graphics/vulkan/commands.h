@@ -38,21 +38,26 @@
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	class CommandPool
+	class Context;
+
+	class Semaphore
 	{
 	public:
-		CommandPool(VkDevice device, uint32_t queue_family);
-		~CommandPool();
+		Semaphore(Context* context);
+		~Semaphore();
 
 		//! Convert to Vulkan ID
-		inline operator VkCommandPool() const
+		inline operator VkSemaphore() const
 		{
-			return _pool;
+			return _semaphore;
 		}
 
 	private:
-		VkDevice _device;
-		VkCommandPool _pool;
+		//! Owner
+		Context* _context;
+
+		//! Vulkan semaphore handle
+		VkSemaphore _semaphore{ nullptr };
 	};
 
 	class CommandBuffer
@@ -93,7 +98,18 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 		}
 
 	public:
-		void submit(const CommandBuffer& buffer);
+		void submit
+		(
+			const CommandBuffer& buffer
+		);
+		
+		void submit
+		(
+			gsl::span<VkCommandBuffer> buffers,
+			VkPipelineStageFlags* flags = nullptr,
+			gsl::span<VkSemaphore> waiting = nullptr,
+			gsl::span<VkSemaphore> signaling = nullptr
+		);
 
 		void waitIdle();
 

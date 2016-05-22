@@ -36,13 +36,52 @@
 // GSL
 #include <span.h>
 
+// VCL
+#include <vcl/graphics/runtime/state/pipelinestate.h>
+#include <vcl/graphics/vulkan/context.h>
+
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
+	struct DescriptorSetLayoutBinding
+	{
+		VkDescriptorType Type;
+		VkShaderStageFlags StageFlags;
+		uint32_t Binding;
+	};
+
+	class DescriptorSetLayout final
+	{
+	public:
+		//! Constructor
+		DescriptorSetLayout(Context* context, std::initializer_list<DescriptorSetLayoutBinding> bindings);
+
+		//! Descrutor
+		~DescriptorSetLayout();
+
+		//! Convert to Vulkan ID
+		inline operator VkDescriptorSetLayout() const
+		{
+			return _layout;
+		}
+
+		inline const VkDescriptorSetLayout* ptr() const
+		{
+			return &_layout;
+		}
+
+	private:
+		//! Owner
+		Context* _context;
+
+		//! Vulkan descriptor layout
+		VkDescriptorSetLayout _layout;
+	};
+
 	class PipelineLayout final
 	{
 	public:
 		//! Constructor
-		PipelineLayout();
+		PipelineLayout(Context* context, DescriptorSetLayout* descriptor_set_layout);
 
 		//! Destructor
 		~PipelineLayout();
@@ -56,29 +95,45 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 	public:
 
 	private:
+		//! Owner
+		Context* _context;
+
 		//! Vulkan pipeline layout
 		VkPipelineLayout _layout;
+
+		//! Associated descriptor set layout
+		DescriptorSetLayout* _descriptorSetLayout;
 	};
 
-	//class PipelineState final
-	//{
-	//public:
-	//	//! Constructor
-	//	PipelineState();
-	//
-	//	//! Destructor
-	//	~PipelineState();
-	//
-	//	//! Convert to Vulkan ID
-	//	inline operator VkPipelineState() const
-	//	{
-	//		return _state;
-	//	}
-	//
-	//public:
-	//	
-	//private:
-	//	//! Vulkan pipeline state
-	//	VkPipelineState _state;
-	//};
+	class PipelineState final : public Vcl::Graphics::Runtime::PipelineState
+	{
+	public:
+		//! Constructor
+		PipelineState
+		(
+			Context* context, PipelineLayout* layout, VkRenderPass pass,
+			const Vcl::Graphics::Runtime::PipelineStateDescription& desc
+		);
+
+		//! Destructor
+		~PipelineState();
+
+		//! Convert to Vulkan ID
+		inline operator VkPipeline() const
+		{
+			return _state;
+		}
+
+	public:
+		
+	private:
+		//! Owner
+		Context* _context;
+
+		//! Associated layout
+		PipelineLayout* _layout;
+
+		//! Vulkan pipeline state
+		VkPipeline _state;
+	};
 }}}
