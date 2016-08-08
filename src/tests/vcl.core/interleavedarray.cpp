@@ -47,7 +47,7 @@ void consecutiveLayoutTest(size_t size)
 	auto rnd = std::bind(rnd_dist, rnd_dev);
 
 	// Create reference data
-	std::vector<Eigen::Matrix<float, ROWS, COLS>> ref_data(size);
+	std::vector<Eigen::Matrix<float, ROWS, COLS>, Eigen::aligned_allocator<Eigen::Matrix<float, ROWS, COLS>>> ref_data(size);
 	std::for_each(std::begin(ref_data), std::end(ref_data), [&rnd](Eigen::Matrix<float, ROWS, COLS>& data)
 	{
 		for (int c = 0; c < data.cols(); c++)
@@ -68,16 +68,16 @@ void consecutiveLayoutTest(size_t size)
 	EXPECT_EQ(data1.size(), (size_t) size);
 
 	// Check if the data is written correctly to the storage
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
-		data0.at<float>(i) = ref_data[i];
-		data1.at<float>(i) = ref_data[i];
+		data0.template at<float>(i) = ref_data[i];
+		data1.template at<float>(i) = ref_data[i];
 	}
 
 	float* data_ptr0 = data0.data();
 	float* data_ptr1 = data1.data();
 	size_t stride = ROWS*COLS;
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
 		size_t base = i*stride;
 
@@ -102,12 +102,12 @@ void consecutiveLayoutTest(size_t size)
 	// Check if the data is read correctly from the storage
 	bool check0 = true;
 	bool check1 = true;
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
-		bool equal0 = data0.at<float>(i) == ref_data[i];
+		bool equal0 = data0.template at<float>(i) == ref_data[i];
 		check0 = check0 && equal0;
 
-		bool equal1 = data1.at<float>(i) == ref_data[i];
+		bool equal1 = data1.template at<float>(i) == ref_data[i];
 		check1 = check1 && equal1;
 	}
 	EXPECT_TRUE(check0);
@@ -124,7 +124,7 @@ void stridedLayoutTest(size_t size)
 	auto rnd = std::bind(rnd_dist, rnd_dev);
 
 	// Create reference data
-	std::vector<Eigen::Matrix<float, ROWS, COLS>> ref_data(size);
+	std::vector<Eigen::Matrix<float, ROWS, COLS>, Eigen::aligned_allocator<Eigen::Matrix<float, ROWS, COLS>>> ref_data(size);
 	std::for_each(std::begin(ref_data), std::end(ref_data), [&rnd](Eigen::Matrix<float, ROWS, COLS>& data)
 	{
 		for (int c = 0; c < data.cols(); c++)
@@ -145,16 +145,16 @@ void stridedLayoutTest(size_t size)
 	EXPECT_EQ(data1.size(), (size_t) size);
 
 	// Check if the data is written correctly to the storage
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
-		data0.at<float>(i) = ref_data[i];
-		data1.at<float>(i) = ref_data[i];
+		data0.template at<float>(i) = ref_data[i];
+		data1.template at<float>(i) = ref_data[i];
 	}
 
 	float* data_ptr0 = data0.data();
 	float* data_ptr1 = data1.data();
 	size_t stride = STRIDE*ROWS*COLS;
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
 		size_t base = (i / STRIDE)*stride;
 		size_t j = (i / STRIDE) * STRIDE;
@@ -182,12 +182,12 @@ void stridedLayoutTest(size_t size)
 	// Check if the data is read correctly from the storage
 	bool check0 = true;
 	bool check1 = true;
-	for (int i = 0; i < size; i++)
+	for (size_t i = 0; i < size; i++)
 	{
-		bool equal0 = data0.at<float>(i) == ref_data[i];
+		bool equal0 = data0.template at<float>(i) == ref_data[i];
 		check0 = check0 && equal0;
 
-		bool equal1 = data1.at<float>(i) == ref_data[i];
+		bool equal1 = data1.template at<float>(i) == ref_data[i];
 		check1 = check1 && equal1;
 	}
 	EXPECT_TRUE(check0);

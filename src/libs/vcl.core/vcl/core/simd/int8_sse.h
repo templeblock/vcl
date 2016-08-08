@@ -108,16 +108,16 @@ namespace Vcl
 		{
 			return VectorScalar<int, 8>
 			(
-				_mm_abs_epi32(get(0)),
-				_mm_abs_epi32(get(1))
+				_mmVCL_abs_epi32(get(0)),
+				_mmVCL_abs_epi32(get(1))
 			);
 		}
 		VCL_STRONG_INLINE VectorScalar<int, 8> max(const VectorScalar<int, 8>& rhs) const
 		{
 			return VectorScalar<int, 8>
 			(
-				_mm_max_epi32(get(0), rhs.get(0)),
-				_mm_max_epi32(get(1), rhs.get(1))
+				_mmVCL_max_epi32(get(0), rhs.get(0)),
+				_mmVCL_max_epi32(get(1), rhs.get(1))
 			);
 		}
 
@@ -226,8 +226,8 @@ namespace Vcl
 		_mm_store_si128((__m128i*) (vars + 0), rhs.get(0));
 		_mm_store_si128((__m128i*) (vars + 4), rhs.get(1));
 
-		s << "'" << vars[0] << "," << vars[1] << "," << vars[2] << "," << vars[3]
-				 << vars[4] << "," << vars[5] << "," << vars[6] << "," << vars[7] << "'";
+		s << "'" << vars[0] << ", " << vars[1] << ", " << vars[2] << ", " << vars[3]
+				 << vars[4] << ", " << vars[5] << ", " << vars[6] << ", " << vars[7] << "'";
 
 		return s;
 	}

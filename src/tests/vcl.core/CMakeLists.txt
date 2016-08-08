@@ -7,8 +7,10 @@ SET(VCL_TEST_SRC
 	interleavedarray.cpp
 	load.cpp
 	minmax.cpp
+	rtti.cpp
 	scatter.cpp
 	scopeguard.cpp
+	simd.cpp
 	smart_ptr.cpp
 )
 SET(VCL_TEST_INC

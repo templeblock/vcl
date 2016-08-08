@@ -28,7 +28,7 @@ namespace Vcl { namespace Graphics { namespace Runtime
 {
 	SamplerDescription::SamplerDescription()
 	{
-		Filter = Filter::MinMagMipLinear;
+		Filter = FilterType::MinMagMipLinear;
 		AddressU = TextureAddressMode::Clamp;
 		AddressV = TextureAddressMode::Clamp;
 		AddressW = TextureAddressMode::Clamp;
@@ -41,5 +41,11 @@ namespace Vcl { namespace Graphics { namespace Runtime
 		BorderColor[1] = 0;
 		BorderColor[2] = 0;
 		BorderColor[3] = 0;
+	}
+
+	Sampler::Sampler(const SamplerDescription& desc)
+	: _desc(desc)
+	{
+
 	}
 }}}

@@ -23,6 +23,7 @@ SET(VCL_CORE_SRC
 )
 SET(VCL_CORE_INC
 	vcl/core/contract.h
+	vcl/core/convert.h
 	vcl/core/flags.h
 	vcl/core/handle.h
 	vcl/core/interleavedarray.h
@@ -53,32 +54,45 @@ SET(VCL_CORE_MEMORY_INC
 SET(VCL_CORE_SIMD_SRC
 	vcl/core/simd/intrinsics_avx.cpp
 	vcl/core/simd/intrinsics_sse.cpp
+	vcl/core/simd/intrinsics_neon.cpp
 )
 SET(VCL_CORE_SIMD_INL
 )
 SET(VCL_CORE_SIMD_INC
 	vcl/core/simd/avx_mathfun.h
 	vcl/core/simd/sse_mathfun.h
+	vcl/core/simd/neon_mathfun.h
 	vcl/core/simd/bool4_sse.h
+	vcl/core/simd/bool4_neon.h
 	vcl/core/simd/bool8_avx.h
 	vcl/core/simd/bool8_sse.h
+	vcl/core/simd/bool8_neon.h
 	vcl/core/simd/bool16_avx.h
 	vcl/core/simd/bool16_sse.h
+	vcl/core/simd/bool16_neon.h
 	vcl/core/simd/float4_sse.h
+	vcl/core/simd/float4_neon.h
 	vcl/core/simd/float8_avx.h
 	vcl/core/simd/float8_sse.h
+	vcl/core/simd/float8_neon.h
 	vcl/core/simd/float16_avx.h
 	vcl/core/simd/float16_sse.h
+	vcl/core/simd/float16_neon.h
 	vcl/core/simd/int4_sse.h
+	vcl/core/simd/int4_neon.h
 	vcl/core/simd/int8_avx.h
 	vcl/core/simd/int8_sse.h
+	vcl/core/simd/int8_neon.h
 	vcl/core/simd/int16_avx.h
 	vcl/core/simd/int16_sse.h
+	vcl/core/simd/int16_neon.h
 	vcl/core/simd/intrinsics_avx.h
 	vcl/core/simd/intrinsics_sse.h
+	vcl/core/simd/intrinsics_neon.h
 	vcl/core/simd/memory.h
 	vcl/core/simd/memory_avx.h
 	vcl/core/simd/memory_sse.h
+	vcl/core/simd/memory_neon.h
 	vcl/core/simd/vectorscalar.h
 )
 
@@ -86,6 +100,28 @@ SET(VCL_CORE_SIMD_INC
 SET(VCL_MATH_INC
 	vcl/math/ceil.h
 	vcl/math/math.h
+)
+
+# VCL / RTTI
+SET(VCL_RTTI_SRC
+	vcl/rtti/metatypebase.cpp
+	vcl/rtti/metatyperegistry.cpp
+)
+SET(VCL_RTTI_INL
+	vcl/rtti/metatypeconstructor.inl
+)
+SET(VCL_RTTI_INC
+	vcl/rtti/attributebase.h
+	vcl/rtti/attribute.h
+	vcl/rtti/constructorbase.h
+	vcl/rtti/constructor.h
+	vcl/rtti/factory.h
+	vcl/rtti/metatypebase.h
+	vcl/rtti/metatypeconstructor.h
+	vcl/rtti/metatypelookup.h
+	vcl/rtti/metatyperegistry.h
+	vcl/rtti/metatype.h
+	vcl/rtti/serializer.h
 )
 
 # VCL / UTIL
@@ -109,6 +145,7 @@ SOURCE_GROUP(core\\memory FILES ${VCL_CORE_MEMORY_SRC} ${VCL_CORE_MEMORY_INL} ${
 SOURCE_GROUP(core\\simd FILES ${VCL_CORE_SIMD_SRC} ${VCL_CORE_SIMD_INL} ${VCL_CORE_SIMD_INC})
 SOURCE_GROUP(core FILES ${VCL_CORE_SRC} ${VCL_CORE_INC})
 SOURCE_GROUP(math FILES ${VCL_MATH_INC})
+SOURCE_GROUP(rtti FILES ${VCL_RTTI_SRC} ${VCL_RTTI_INL} ${VCL_RTTI_INC})
 SOURCE_GROUP(util FILES ${VCL_UTIL_SRC} ${VCL_UTIL_INC})
 
 SET(SOURCE
@@ -118,6 +155,7 @@ SET(SOURCE
 	${VCL_CORE_SIMD_SRC} ${VCL_CORE_SIMD_INL} ${VCL_CORE_SIMD_INC}
 	${VCL_CORE_SRC} ${VCL_CORE_INC}
 	${VCL_MATH_INC}
+	${VCL_RTTI_SRC} ${VCL_RTTI_INL} ${VCL_RTTI_INC}
 	${VCL_UTIL_SRC} ${VCL_UTIL_INC}
 )
 
@@ -133,6 +171,7 @@ TARGET_INCLUDE_DIRECTORIES(vcl_core PUBLIC ${PROJECT_BINARY_DIR})
 TARGET_LINK_LIBRARIES(vcl_core
 	fmt
 	gsl
+	nlohmann_json
 )
 
 # Setup installation
@@ -142,5 +181,6 @@ INSTALL(FILES ${VCL_CORE_MEMORY_INL} ${VCL_CORE_MEMORY_INC} DESTINATION include/
 INSTALL(FILES ${VCL_CORE_SIMD_INL} ${VCL_CORE_SIMD_INC} DESTINATION include/vcl/core/simd)
 INSTALL(FILES ${VCL_CORE_INC} DESTINATION include/vcl/core)
 INSTALL(FILES ${VCL_MATH_INC} DESTINATION include/vcl/math)
+INSTALL(FILES ${VCL_RTTI_INL} ${VCL_RTTI_INC} DESTINATION include/vcl/rtti)
 INSTALL(FILES ${VCL_UTIL_INC} DESTINATION include/vcl/util)
 INSTALL(TARGETS vcl_core ARCHIVE DESTINATION lib)

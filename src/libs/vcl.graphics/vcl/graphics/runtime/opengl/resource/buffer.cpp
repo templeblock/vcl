@@ -31,8 +31,35 @@
 
 #ifdef VCL_OPENGL_SUPPORT
 
+#	if defined(VCL_GL_ARB_direct_state_access)
+#		define glCreateBuffersVCL glCreateBuffers
+#		define glNamedBufferStorageVCL glNamedBufferStorage
+#		define glMapNamedBufferRange glMapNamedBufferRange
+#		define glUnmapNamedBufferVCL glUnmapNamedBuffer
+#		define glFlushMappedNamedBufferRangeVCL glFlushMappedNamedBufferRange
+#		define glCopyNamedBufferSubDataVCL glCopyNamedBufferSubData
+#	elif defined(VCL_GL_EXT_direct_state_access)
+#		define glCreateBuffersVCL glGenBuffers
+#		define glNamedBufferStorageVCL glNamedBufferStorageEXT
+#		define glMapNamedBufferRangeVCL glMapNamedBufferRangeEXT
+#		define glUnmapNamedBufferVCL glUnmapNamedBufferEXT
+#		define glFlushMappedNamedBufferRangeVCL glFlushMappedNamedBufferRangeEXT
+#		define glCopyNamedBufferSubDataVCL glNamedCopyBufferSubDataEXT
+#	endif
+
 namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 {
+	BufferBindPoint::BufferBindPoint(GLenum target, GLuint id)
+	: _target(target)
+	, _id(id)
+	{
+		glBindBuffer(_target, _id);
+	}
+	BufferBindPoint::~BufferBindPoint()
+	{
+		glBindBuffer(_target, GL_NONE);
+	}
+
 	Buffer::Buffer(const BufferDescription& desc, bool allowPersistentMapping, bool allowCoherentMapping, const BufferInitData* init_data)
 	: Runtime::Buffer(desc.SizeInBytes, desc.Usage, desc.CPUAccess)
 	, Resource()
@@ -87,11 +114,11 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 		}
 		
 		// Allocate a GL buffer ID
-		glCreateBuffers(1, &_glId);
+		glCreateBuffersVCL(1, &_glId);
 
 		// Allocate GPU memory
 		void* init_data_ptr = init_data ? init_data->Data : nullptr;
-		glNamedBufferStorage(_glId, desc.SizeInBytes, init_data_ptr, flags);
+		glNamedBufferStorageVCL(_glId, desc.SizeInBytes, init_data_ptr, flags);
 		
 		Ensure(_glId > 0, "GL buffer is created.");
 	}
@@ -102,7 +129,7 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 
 		if (_mappedAccess.isAnySet())
 		{
-			glUnmapNamedBuffer(_glId);
+			glUnmapNamedBufferVCL(_glId);
 
 			// Reset the mapped indicator
 			_mappedAccess.clear();
@@ -120,6 +147,11 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 		}
 
 		Ensure(_glId == 0, "GL buffer is cleaned up.");
+	}
+
+	BufferBindPoint Buffer::bind(GLenum target)
+	{
+		return{ target, _glId };
 	}
 
 	void* Buffer::map(size_t offset, size_t length, Flags<CPUAccess> access, Flags<MapOptions> options)
@@ -161,8 +193,8 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 
 			if (access.isSet(CPUAccess::Write))
 				map_flags |= GL_MAP_WRITE_BIT;
-			
-			mappedPtr = glMapNamedBufferRange(_glId, offset, length, map_flags);
+
+			mappedPtr = glMapNamedBufferRangeVCL(_glId, offset, length, map_flags);
 
 			_mappedAccess = access;
 			_mappedOptions = options;
@@ -185,7 +217,7 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 			if (access.isSet(CPUAccess::Read))
 				map_flags |= GL_MAP_READ_BIT;
 
-			mappedPtr = glMapNamedBufferRange(_glId, offset, length, map_flags);
+			mappedPtr = glMapNamedBufferRangeVCL(_glId, offset, length, map_flags);
 
 			_mappedAccess = access;
 			_mappedOptions = options;
@@ -198,7 +230,7 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 		{
 			GLint64 min_align = 0;
 			glGetInteger64v(GL_MIN_MAP_BUFFER_ALIGNMENT, &min_align);
-			Ensure(((ptrdiff_t) mappedPtr - offset) % min_align == 0, "Mapped pointers are aligned correctly.", "Offset: {}, Minimum aligment: {}", offset, min_align);
+			EnsureEx(((ptrdiff_t) mappedPtr - offset) % min_align == 0, "Mapped pointers are aligned correctly.", "Offset: {}, Minimum aligment: {}", offset, min_align);
 		}
 
 		return mappedPtr;
@@ -212,7 +244,7 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 
 		// If access is not using the coherency flag, we have to 
 		// make sure that we are still providing coherent memory access
-		glFlushMappedNamedBufferRange(_glId, offset, length);
+		glFlushMappedNamedBufferRangeVCL(_glId, offset, length);
 	}
 
 	void Buffer::unmap()
@@ -227,7 +259,7 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 		_mappedSize = 0;
 
 		// Unmap the buffer
-		GLboolean success = glUnmapNamedBuffer(_glId);
+		GLboolean success = glUnmapNamedBufferVCL(_glId);
 		if (!success)
 		{
 			// Memory was lost
@@ -237,7 +269,18 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 		Ensure(!_mappedAccess.isAnySet(), "Buffer is not mapped.");
 	}
 
-	void Buffer::copyTo(Buffer& target, size_t srcOffset, size_t dstOffset, size_t size)
+	void Buffer::copyTo(void* dst, size_t srcOffset, size_t dstOffset, size_t size) const
+	{
+		Require(_glId > 0, "GL buffer is created.");
+		Require(implies(size < std::numeric_limits<size_t>::max(), srcOffset + size <= sizeInBytes()), "Size to copy is valid");
+
+		if (size == std::numeric_limits<size_t>::max())
+			size = sizeInBytes() - srcOffset;
+
+		glGetNamedBufferSubData(_glId, srcOffset, size, (char*) dst + dstOffset);
+	}
+
+	void Buffer::copyTo(Buffer& target, size_t srcOffset, size_t dstOffset, size_t size) const
 	{
 		Require(_glId > 0, "GL buffer is created.");
 		Require(target.id() > 0, "GL buffer is created.");
@@ -245,11 +288,11 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace OpenGL
 		Require(implies(size < std::numeric_limits<size_t>::max(), srcOffset + size <= sizeInBytes()), "Size to copy is valid");
 		Require(implies(size < std::numeric_limits<size_t>::max(), dstOffset + size <= target.sizeInBytes()), "Size to copy is valid");
 
-		if (size < std::numeric_limits<size_t>::max())
+		if (size == std::numeric_limits<size_t>::max())
 			size = sizeInBytes() - srcOffset;
 		Check(dstOffset + size <= target.sizeInBytes(), "Size to copy is valid");
-
-		glCopyNamedBufferSubData(_glId, target.id(), srcOffset, dstOffset, size);
+		
+		glCopyNamedBufferSubDataVCL(_glId, target.id(), srcOffset, dstOffset, size);
 	}
 }}}}
 #endif // VCL_OPENGL_SUPPORT

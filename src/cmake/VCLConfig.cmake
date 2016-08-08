@@ -1,16 +1,21 @@
 # Determine the compiler vendor
 MESSAGE(STATUS "Detecting compiler: ${CMAKE_CXX_COMPILER_ID}")
-IF(MSVC)
-	SET(VCL_COMPILER_MSVC ON)
-ELSEIF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Intel")
+
+IF(${CMAKE_CXX_COMPILER_ID} MATCHES "Intel")
 	SET(VCL_COMPILER_INTEL ON)
-ELSEIF("${CMAKE_CXX_COMPILER_ID}" MATCHES "GNU")
+ELSEIF(${CMAKE_CXX_COMPILER_ID} MATCHES "GNU")
 	SET(VCL_COMPILER_GNU ON)
-ELSEIF("${CMAKE_CXX_COMPILER_ID}" MATCHES "Clang")
+ELSEIF(${CMAKE_CXX_COMPILER_ID} MATCHES "Clang")
 	SET(VCL_COMPILER_CLANG ON)
+ELSEIF(MSVC)
+	SET(VCL_COMPILER_MSVC ON)
 ELSE()
 	SET(VCL_COMPILER_UNKNOWN ON)
 ENDIF()
+
+# Define C++ standard
+set(CMAKE_CXX_STANDARD 14)
+set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # Determine platform architexture
 IF(CMAKE_SIZEOF_VOID_P EQUAL 8)
@@ -94,6 +99,7 @@ SET(VCL_VECTORIZE_SSE4_1 CACHE BOOL "Enable SSE 4.1 instruction set")
 SET(VCL_VECTORIZE_SSE4_2 CACHE BOOL "Enable SSE 4.2 instruction set")
 SET(VCL_VECTORIZE_AVX CACHE BOOL "Enable AVX instruction set")
 SET(VCL_VECTORIZE_AVX2 CACHE BOOL "Enable AVX 2 instruction set")
+SET(VCL_VECTORIZE_NEON CACHE BOOL "Enable NEON instruction set")
 
 # Set whether contracts should be used
 SET(VCL_USE_CONTRACTS CACHE BOOL "Enable contracts")
@@ -105,8 +111,11 @@ IF(VCL_COMPILER_MSVC)
 	SET(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /GS- /fp:fast")
 	
 	# Configure all configuration
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4")
+	# * Enable all warnings
+	# * Exceptions
+	# * RTTI
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /W4 /EHsc /GR")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /W4 /EHsc /GR")
 	
 	# Make AVX available
 	IF(VCL_VECTORIZE_AVX2)
@@ -119,6 +128,9 @@ IF(VCL_COMPILER_MSVC)
 		# All x64 bit machine come with SSE2, thus it's defined as default
 		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:SSE2")
 		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:SSE2")
+	ELSEIF(VCL_VECTORIZE_NEON)
+		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} /arch:VFPv4")
+		SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} /arch:VFPv4")
 	ENDIF()
 
 ENDIF(VCL_COMPILER_MSVC)
@@ -127,8 +139,8 @@ ENDIF(VCL_COMPILER_MSVC)
 IF(VCL_COMPILER_GNU OR VCL_COMPILER_CLANG)
 
 	# Configure all configuration
-	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -std=c++0x")
-	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -std=c++0x")
+	SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall -Wno-ignored-attributes -Wno-misleading-indentation")
+	SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wno-ignored-attributes -Wno-misleading-indentation")
 
 	IF(VCL_VECTORIZE_AVX2)
 		SET(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mavx2")

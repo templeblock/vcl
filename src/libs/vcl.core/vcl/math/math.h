@@ -53,7 +53,7 @@ namespace Vcl { namespace Mathematics
 
 	VCL_STRONG_INLINE double abs(double a)
 	{
-		return ::abs(a);
+		return ::fabs(a);
 	}
 
 	VCL_STRONG_INLINE double sqrt(double a)
@@ -136,7 +136,7 @@ namespace Vcl { namespace Mathematics
 
 	VCL_STRONG_INLINE float abs(float a)
 	{
-		return ::abs(a);
+		return ::fabs(a);
 	}
 
 	VCL_STRONG_INLINE float sqrt(float a)
@@ -146,20 +146,25 @@ namespace Vcl { namespace Mathematics
 
 	VCL_STRONG_INLINE float rsqrt(float in)
 	{
-	   float out;
+#ifdef VCL_VECTORIZE_SSE
+		float out;
 
-	   const __m128 v = _mm_set_ss(in);
-	   const __m128 nr = _mm_rsqrt_ss(v);
-	   const __m128 muls = _mm_mul_ss(_mm_mul_ss(nr, nr), v);
-	   const __m128 beta = _mm_mul_ss(_mm_set_ss(0.5f), nr);
-	   const __m128 gamma = _mm_sub_ss(_mm_set_ss(3.0f), muls);
+		const __m128 v = _mm_set_ss(in);
+		const __m128 nr = _mm_rsqrt_ss(v);
+		const __m128 muls = _mm_mul_ss(_mm_mul_ss(nr, nr), v);
+		const __m128 beta = _mm_mul_ss(_mm_set_ss(0.5f), nr);
+		const __m128 gamma = _mm_sub_ss(_mm_set_ss(3.0f), muls);
 
-	   _mm_store_ss(&out, _mm_mul_ss(beta, gamma));
-	   return out;
+		_mm_store_ss(&out, _mm_mul_ss(beta, gamma));
+		return out;
+#else
+		return 1 / std::sqrt(in);
+#endif
 	}
 
 	VCL_STRONG_INLINE float rcp(float f)
 	{
+#ifdef VCL_VECTORIZE_SSE
 		float out;
 
 		__m128 v = _mm_set_ss(f);
@@ -175,6 +180,9 @@ namespace Vcl { namespace Mathematics
 
 		_mm_store_ss(&out, result);
 		return out;
+#else
+		return 1 / f;
+#endif
 	}
 
 	VCL_STRONG_INLINE float max(float a, float b)
@@ -184,7 +192,7 @@ namespace Vcl { namespace Mathematics
 		_mm_store_ss(&z, _mm_max_ss(_mm_set_ss(a), _mm_set_ss(b)));
 		return z;
 #else
-		return std::max(a, b);
+		return (a > b) ? a : b;
 #endif
 	}
 
@@ -195,7 +203,7 @@ namespace Vcl { namespace Mathematics
 		_mm_store_ss(&z, _mm_min_ss(_mm_set_ss(a), _mm_set_ss(b)));
 		return z;
 #else
-		return std::min(a, b);
+		return (a < b) ? a : b;
 #endif
 	}
 

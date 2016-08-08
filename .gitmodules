@@ -16,6 +16,9 @@
 [submodule "src/externals/googletest"]
 	path = src/externals/googletest
 	url = https://github.com/google/googletest
+[submodule "src/externals/json"]
+	path = src/externals/json
+	url = https://github.com/nlohmann/json
 [submodule "src/examples/glfw"]
 	path = src/examples/glfw
 	url = https://github.com/glfw/glfw

@@ -168,17 +168,17 @@ namespace Vcl { namespace Core
 		inline explicit AlignedAllocPolicy() {}
 		inline ~AlignedAllocPolicy() {}
 		inline explicit AlignedAllocPolicy(AlignedAllocPolicy const&) {}
-		template <typename U, int Alignment>
-		inline explicit AlignedAllocPolicy(AlignedAllocPolicy<U, Alignment> const&) {}
+		template <typename U, int AlignmentRhs>
+		inline explicit AlignedAllocPolicy(AlignedAllocPolicy<U, AlignmentRhs> const&) {}
 
 	public: // Memory allocation
 		inline pointer allocate(size_type cnt, typename std::allocator<void>::const_pointer = 0)
 		{
-			return reinterpret_cast<pointer>(_aligned_malloc(cnt * sizeof(T), Alignment));
+			return reinterpret_cast<pointer>(_mm_malloc(cnt * sizeof(T), Alignment));
 		}
 		inline void deallocate(pointer p, size_type)
 		{
-			_aligned_free(p);
+			_mm_free(p);
 		}
 
 	public: // Size
@@ -230,7 +230,7 @@ namespace Vcl { namespace Core
 	public:
 		inline explicit Allocator() {}
 		inline ~Allocator() {}
-		inline Allocator(Allocator const& rhs) :Traits(rhs), Policy(rhs) {}
+		inline Allocator(Allocator const& rhs) : Policy(rhs), Traits(rhs) {}
 		template <typename U, typename P, typename T2>
 		inline Allocator(Allocator<U, P, T2> const& rhs) : Traits(rhs), Policy(rhs) {}
 	};
