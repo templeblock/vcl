@@ -32,6 +32,7 @@
 #include <vulkan/vulkan.h>
 
 // Include the relevant parts from the library
+#include <vcl/graphics/vulkan/commands.h>
 #include <vcl/graphics/vulkan/context.h>
 #include <vcl/graphics/vulkan/device.h>
 #include <vcl/graphics/vulkan/platform.h>
@@ -76,4 +77,24 @@ TEST(Vulkan, InitDevicesForAllPhysicalDevicesWithoutExtensions)
 
 		EXPECT_TRUE(ptr != nullptr) << "Vulkan device is not created.";
 	}
+}
+
+// Tests command queue allocation on a simple device
+TEST(Vulkan, CommandQueueOnSimpleDevice)
+{
+	using namespace Vcl::Graphics::Vulkan;
+
+	// Initialize the Vulkan platform
+	auto platform = std::make_unique<Platform>();
+
+	if (platform->nrDevices() == 0)
+		return;
+
+	auto& dev = platform->device(0);
+	auto context = dev.createContext();
+
+	CommandQueue queue{ context->queue(0) };
+	VkQueue gk_queue = queue;
+
+	EXPECT_TRUE(gk_queue != nullptr) << "Vulkan command queue is not created.";
 }

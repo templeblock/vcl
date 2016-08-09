@@ -91,7 +91,7 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace Vulkan
 
 			int heap_index = context->device()->getMemoryTypeIndex(reqs.memoryTypeBits, flags);
 
-			_memoryOwner = std::make_unique<Vcl::Graphics::Vulkan::Memory>(context, desc.SizeInBytes, heap_index);
+			_memoryOwner = std::make_unique<Vcl::Graphics::Vulkan::Memory>(context, desc.SizeInBytes, heap_index, flags);
 			_memory = _memoryOwner.get();
 		}
 		else

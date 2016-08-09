@@ -326,7 +326,9 @@ int main(int argc, char* argv[])
 
 		// Render the scene
 		uint32_t curr_buf;
-		swapchain.acquireNextImage(presentComplete, &curr_buf);
+		err = swapchain.acquireNextImage(presentComplete, &curr_buf);
+		if (err != VK_SUCCESS)
+			continue;
 		
 		// Put post present barrier into command buffer
 		post_present.begin();

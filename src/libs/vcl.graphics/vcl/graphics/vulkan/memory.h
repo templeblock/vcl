@@ -44,8 +44,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 	{
 	public:
 		//! Constructor
-		Memory(Context* ctx, size_t size, int heapIndex);
-		Memory(Context* ctx, size_t size, VkMemoryPropertyFlags flags);
+		Memory(Context* ctx, size_t size, int heapIndex, VkMemoryPropertyFlags flags);
 
 		//! Destructor
 		~Memory();

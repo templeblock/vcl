@@ -32,9 +32,10 @@
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {
-	Memory::Memory(Context* ctx, size_t size, int heapIndex)
+	Memory::Memory(Context* ctx, size_t size, int heapIndex, VkMemoryPropertyFlags flags)
 	: _context(ctx)
 	, _sizeInBytes(size)
+	, _memoryFlags(flags)
 	{
 		VkMemoryAllocateInfo alloc = {};
 		alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
@@ -42,23 +43,6 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 
 		// Find the correct heap to allocate memory from
 		alloc.memoryTypeIndex = heapIndex;
-		VkResult res = vkAllocateMemory(*_context, &alloc, nullptr, &_memory);
-		Ensure(res == VK_SUCCESS, "Memory was allocated.");
-	}
-
-	Memory::Memory(Context* ctx, size_t size, VkMemoryPropertyFlags flags)
-	: _context(ctx)
-	, _sizeInBytes(size)
-	, _memoryFlags(flags)
-	{
-		Check(false, "To Do");
-
-		VkMemoryAllocateInfo alloc = {};
-		alloc.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		alloc.allocationSize = _sizeInBytes;
-
-		// Find the correct heap to allocate memory from
-		//alloc.memoryTypeIndex = heapIndex;
 		VkResult res = vkAllocateMemory(*_context, &alloc, nullptr, &_memory);
 		Ensure(res == VK_SUCCESS, "Memory was allocated.");
 	}
