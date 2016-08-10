@@ -240,7 +240,7 @@ int main(int argc, char* argv[])
 
 	SwapChainDescription desc;
 	desc.Surface = surface;
-	desc.NumberOfImages = 1;
+	desc.NumberOfImages = 4;
 	desc.ColourFormat = VK_FORMAT_B8G8R8A8_UNORM;
 	desc.ColourSpace = VK_COLORSPACE_SRGB_NONLINEAR_KHR;
 	desc.Width = 1280;
