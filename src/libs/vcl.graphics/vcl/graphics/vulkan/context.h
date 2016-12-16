@@ -36,7 +36,7 @@
 #include <vulkan/vulkan.h>
 
 // GSL
-#include <span.h>
+#include <span>
 
 namespace Vcl { namespace Graphics { namespace Vulkan
 {

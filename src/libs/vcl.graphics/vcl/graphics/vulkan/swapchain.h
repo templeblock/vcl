@@ -35,7 +35,7 @@
 #include <vulkan/vulkan.h>
 
 // GSL
-#include <span.h>
+#include <span>
 
 // VCL
 #include <vcl/graphics/vulkan/context.h>

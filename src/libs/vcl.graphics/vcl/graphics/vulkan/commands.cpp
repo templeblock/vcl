@@ -208,7 +208,7 @@ namespace Vcl { namespace Graphics { namespace Vulkan
 	)
 	{
 		VkCommandBuffer buf = buffer;
-		submit({ buf });
+		submit({ &buf, 1 });
 	}
 
 	void CommandQueue::waitIdle()

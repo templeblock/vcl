@@ -61,8 +61,8 @@ namespace Vcl { namespace Graphics { namespace Runtime { namespace Vulkan
 	)
 	: Runtime::Buffer(desc.SizeInBytes, desc.Usage, desc.CPUAccess)
 	{
-		Require(implies(usage() == Usage::Immutable, cpuAccess().isAnySet() == false), "No CPU access requested for immutable buffer.");
-		Require(implies(usage() == Usage::Dynamic, cpuAccess().isSet(CPUAccess::Read) == false), "Dynamic buffer is not mapped for reading.");
+		Require(implies(usage() == ResourceUsage::Immutable, cpuAccess().isAnySet() == false), "No CPU access requested for immutable buffer.");
+		Require(implies(usage() == ResourceUsage::Dynamic, cpuAccess().isSet(ResourceAccess::Read) == false), "Dynamic buffer is not mapped for reading.");
 		Require(implies(init_data, init_data->SizeInBytes == desc.SizeInBytes), "Initialization data has same size as buffer.");
 		
 		VkBufferCreateInfo buffer_info;

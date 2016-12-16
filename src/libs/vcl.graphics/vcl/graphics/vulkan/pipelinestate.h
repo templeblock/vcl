@@ -34,7 +34,7 @@
 #include <vulkan/vulkan.h>
 
 // GSL
-#include <span.h>
+#include <span>
 
 // VCL
 #include <vcl/graphics/runtime/state/pipelinestate.h>
