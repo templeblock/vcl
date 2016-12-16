@@ -111,7 +111,7 @@ void buildCommandBuffers(Vcl::Graphics::Vulkan::Backbuffer* bb, VkCommandPool cm
 		viewport.width = (float)width / 2;
 		viewport.minDepth = (float) 0.0f;
 		viewport.maxDepth = (float) 1.0f;
-		drawCmdBuffers[i].setViewport(0, viewport);
+		drawCmdBuffers[i].setViewport(0, { &viewport, 1 });
 
 		// Update dynamic scissor state
 		VkRect2D scissor = {};
@@ -119,7 +119,7 @@ void buildCommandBuffers(Vcl::Graphics::Vulkan::Backbuffer* bb, VkCommandPool cm
 		scissor.extent.height = height / 2;
 		scissor.offset.x = width / 4;
 		scissor.offset.y = height / 4;
-		drawCmdBuffers[i].setScissor(0, scissor);
+		drawCmdBuffers[i].setScissor(0, { &scissor, 1 });
 
 		//// Bind descriptor sets describing shader binding points
 		//vkCmdBindDescriptorSets(drawCmdBuffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 0, NULL);
@@ -263,9 +263,9 @@ int main(int argc, char* argv[])
 
 	// Setup buffers
 	Vcl::Graphics::Runtime::BufferDescription staging_buffer_desc;
-	staging_buffer_desc.CPUAccess = Vcl::Graphics::Runtime::CPUAccess::Write | Vcl::Graphics::Runtime::CPUAccess::Read;
+	staging_buffer_desc.CPUAccess = Vcl::Graphics::Runtime::ResourceAccess::Write | Vcl::Graphics::Runtime::ResourceAccess::Read;
 	staging_buffer_desc.SizeInBytes = 4096;
-	staging_buffer_desc.Usage = Vcl::Graphics::Runtime::Usage::Staging;
+	staging_buffer_desc.Usage = Vcl::Graphics::Runtime::ResourceUsage::Staging;
 	Vcl::Graphics::Runtime::Vulkan::Buffer staging_buffer
 	{
 		context.get(), staging_buffer_desc, Vcl::Graphics::Runtime::Vulkan::BufferUsage::TransferSource
@@ -344,7 +344,7 @@ int main(int argc, char* argv[])
 		VkSemaphore s0 = presentComplete;
 		VkSemaphore s1 = renderComplete;
 		VkCommandBuffer b0 = cmds[curr_buf];
-		queue.submit({ b0 }, &pipelineStages, { s0 }, { s1 });
+		queue.submit({ &b0, 1 }, &pipelineStages, { &s0, 1 }, { &s1, 1 });
 
 		// Present the current buffer to the swap chain
 		// We pass the signal semaphore from the submit info
